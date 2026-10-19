@@ -10,13 +10,25 @@ enum AddFlow: String, Identifiable {
 
 struct TodayView: View {
     @Environment(AppSettings.self) private var settings
+    @Environment(HealthService.self) private var health
+    @Environment(\.scenePhase) private var scenePhase
     @State private var day = Calendar.current.startOfDay(for: .now)
     @State private var flow: AddFlow?
 
     var body: some View {
         NavigationStack {
-            DayLog(day: day, target: settings.target)
+            DayLog(day: day, target: settings.target(activeEnergyKcal: health.activeEnergy(on: day)))
                 .navigationTitle(title)
+                .refreshable { await health.refreshActiveEnergy(on: day) }
+                // Reload on day change, return to the app, or Health switched on, then follow
+                // new workouts and movement live while Today is open.
+                .task(id: ActivityKey(day: day, active: scenePhase == .active, health: settings.healthEnabled)) {
+                    guard scenePhase == .active else { return }
+                    await health.refreshActiveEnergy(on: day)
+                    for await _ in health.activeEnergyChanges() {
+                        await health.refreshActiveEnergy(on: day)
+                    }
+                }
                 .toolbar {
                     ToolbarItemGroup(placement: .topBarTrailing) {
                         Button("Previous day", systemImage: "chevron.left") { shift(-1) }
@@ -53,12 +65,19 @@ struct TodayView: View {
     }
 }
 
+private struct ActivityKey: Equatable {
+    var day: Date
+    var active: Bool
+    var health: Bool
+}
+
 /// The day's summary and meals. Split out so the @Query can depend on `day`.
 private struct DayLog: View {
     let day: Date
     let target: DailyTarget
     @Query private var entries: [LogEntry]
     @Environment(\.modelContext) private var context
+    @Environment(HealthService.self) private var health
 
     init(day: Date, target: DailyTarget) {
         self.day = day
@@ -89,7 +108,10 @@ private struct DayLog: View {
                         EntryRow(entry: entry)
                     }
                     .onDelete { offsets in
-                        for index in offsets { context.delete(items[index]) }
+                        let removed = offsets.map { items[$0] }
+                        let syncIDs = removed.compactMap(\.healthSyncID)
+                        removed.forEach(context.delete)
+                        Task { await health.deleteFood(syncIDs: syncIDs) }
                     }
                 } header: {
                     HStack {

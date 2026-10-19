@@ -9,6 +9,7 @@ struct MealPhotoFlow: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
+    @Environment(HealthService.self) private var health
     @State private var state: PhotoState = .capture
     @State private var meal = Meal.suggested()
 
@@ -111,6 +112,7 @@ struct MealPhotoFlow: View {
     }
 
     private func logAll(_ items: [MealPhotoItem]) {
+        var logged: [LogEntry] = []
         for item in items where item.grams > 0 {
             let candidate = FoodCandidate(
                 id: "photo:\(item.name.lowercased())",
@@ -118,8 +120,9 @@ struct MealPhotoFlow: View {
                 per100: item.per100,
                 source: .mealPhoto
             )
-            context.log(context.food(for: candidate), grams: item.grams, meal: meal, on: day)
+            logged.append(context.log(context.food(for: candidate), grams: item.grams, meal: meal, on: day))
         }
+        Task { await health.save(logged) }
         dismiss()
     }
 }

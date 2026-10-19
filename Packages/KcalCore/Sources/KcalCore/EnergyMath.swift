@@ -65,6 +65,9 @@ public struct DailyTarget: Equatable, Sendable {
     public var plannedWeeklyLossKg: Double
     /// Set when the requested rate was reduced or the calorie floor kicked in.
     public var adjustmentNote: String?
+    /// Activity calories counted towards maintenance, when they come from Apple Health.
+    /// Nil when maintenance uses the activity level multiplier instead.
+    public var activityKcal: Double? = nil
 }
 
 public enum EnergyMath {
@@ -81,6 +84,11 @@ public enum EnergyMath {
         bmr(p) * p.activity.multiplier
     }
 
+    /// Resting energy plus the thermic effect of food (about 10%). Measured active
+    /// energy already covers all movement above resting, so it is added on top of this
+    /// rather than the 1.2 sedentary multiplier, which would count some movement twice.
+    public static let thermicEffectMultiplier = 1.1
+
     /// Common guidance: no faster than about 1% of body weight per week.
     public static func maxWeeklyLoss(weightKg: Double) -> Double {
         weightKg * 0.01
@@ -91,9 +99,18 @@ public enum EnergyMath {
         sex == .male ? 1500 : 1200
     }
 
-    public static func dailyTarget(_ p: EnergyProfile) -> DailyTarget {
+    /// - Parameters:
+    ///   - activeEnergyKcal: Measured active energy for the day (e.g. from Apple Health).
+    ///     Nil uses the activity level multiplier.
+    ///   - activeCredit: Share of measured active energy to count, since watches often overestimate it.
+    public static func dailyTarget(
+        _ p: EnergyProfile,
+        activeEnergyKcal: Double? = nil,
+        activeCredit: Double = 0.75
+    ) -> DailyTarget {
         let bmr = bmr(p)
-        let maintenance = maintenance(p)
+        let activityKcal = activeEnergyKcal.map { max(0, $0) * activeCredit }
+        let maintenance = activityKcal.map { bmr * thermicEffectMultiplier + $0 } ?? maintenance(p)
         var note: String?
 
         var rate = max(0, p.weeklyLossKg)
@@ -118,7 +135,8 @@ public enum EnergyMath {
             kcal: kcal,
             macros: macroTargets(kcal: kcal, weightKg: p.weightKg),
             plannedWeeklyLossKg: rate,
-            adjustmentNote: note
+            adjustmentNote: note,
+            activityKcal: activityKcal
         )
     }
 

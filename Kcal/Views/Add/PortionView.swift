@@ -11,6 +11,7 @@ struct PortionView: View {
     let onLogged: () -> Void
 
     @Environment(\.modelContext) private var context
+    @Environment(HealthService.self) private var health
     @State private var amount: Double
     @State private var unit: PortionUnit
     @State private var meal = Meal.suggested()
@@ -136,7 +137,8 @@ struct PortionView: View {
 
     private func log() {
         let food = existing ?? context.food(for: candidate)
-        context.log(food, grams: grams, meal: meal, on: day)
+        let entry = context.log(food, grams: grams, meal: meal, on: day)
+        Task { await health.save([entry]) }
         onLogged()
     }
 }

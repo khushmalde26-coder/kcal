@@ -35,6 +35,10 @@ struct SummaryCard: View {
             HStack {
                 stat("Eaten", eaten.kcal)
                 Divider().frame(height: 28)
+                if let activity = target.activityKcal {
+                    stat("Activity", activity, sign: "+")
+                    Divider().frame(height: 28)
+                }
                 stat("Goal", target.kcal)
             }
         }
@@ -43,12 +47,14 @@ struct SummaryCard: View {
         .background(.background.secondary, in: .rect(cornerRadius: 32))
         .padding(.horizontal)
         .animation(.smooth, value: eaten)
+        .animation(.smooth, value: target)
     }
 
-    private func stat(_ title: String, _ value: Double) -> some View {
+    private func stat(_ title: String, _ value: Double, sign: String = "") -> some View {
         VStack(spacing: 2) {
-            Text(value, format: .number.precision(.fractionLength(0)))
+            Text(sign + value.formatted(.number.precision(.fractionLength(0))))
                 .font(.headline.monospacedDigit())
+                .contentTransition(.numericText(value: value))
             Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)

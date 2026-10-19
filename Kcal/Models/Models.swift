@@ -84,6 +84,8 @@ final class LogEntry {
     var carbs: Double = 0
     var fat: Double = 0
     var food: Food?
+    /// Base sync identifier of the samples written to Apple Health, if any.
+    var healthSyncID: String?
 
     init(food: Food, grams: Double, meal: Meal, date: Date) {
         self.food = food
@@ -119,6 +121,10 @@ final class LogEntry {
 final class WeightEntry {
     var date: Date = Date.now
     var kg: Double = 0
+    /// Sync identifier of the sample Kcal wrote to Apple Health, if any.
+    var healthSyncID: String?
+    /// Read from Apple Health (another app or a scale), so never written back.
+    var importedFromHealth: Bool = false
 
     init(date: Date, kg: Double) {
         self.date = date

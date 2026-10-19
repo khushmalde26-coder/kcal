@@ -5,6 +5,7 @@ import KcalCore
 
 struct ProgressScreen: View {
     @Environment(AppSettings.self) private var settings
+    @Environment(HealthService.self) private var health
     @Environment(\.modelContext) private var context
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
     @Query private var recentEntries: [LogEntry]
@@ -57,7 +58,7 @@ struct ProgressScreen: View {
                     row("Trend weight", trend.last.map { "\($0.formatted(.number.precision(.fractionLength(1)))) kg" })
                     row("Weekly change", weeklyRate.map { "\($0 > 0 ? "+" : "")\($0.formatted(.number.precision(.fractionLength(2)))) kg" })
                     row("Average intake", averageIntake.map { "\(Int($0.rounded())) kcal" })
-                    row("Daily goal", "\(Int(settings.target.kcal)) kcal")
+                    row("Daily goal", "\(Int(settings.target(activeEnergyKcal: health.activeEnergy(on: .now)).kcal)) kcal")
                 }
 
                 if !weights.isEmpty {
@@ -72,7 +73,10 @@ struct ProgressScreen: View {
                         }
                         .onDelete { offsets in
                             let reversed = Array(weights.reversed())
-                            for index in offsets { context.delete(reversed[index]) }
+                            let removed = offsets.map { reversed[$0] }
+                            let syncIDs = removed.compactMap(\.healthSyncID)
+                            removed.forEach(context.delete)
+                            Task { await health.deleteWeight(syncIDs: syncIDs) }
                         }
                     }
                 }
@@ -120,6 +124,7 @@ private struct AddWeightSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @Environment(AppSettings.self) private var settings
+    @Environment(HealthService.self) private var health
     @State private var kg: Double
     @State private var date = Date.now
 
@@ -146,7 +151,9 @@ private struct AddWeightSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save", systemImage: "checkmark") {
-                        context.insert(WeightEntry(date: date, kg: kg))
+                        let entry = WeightEntry(date: date, kg: kg)
+                        context.insert(entry)
+                        Task { await health.save(entry) }
                         // Keep the goal calculation current with the latest weight.
                         if Calendar.current.isDateInToday(date) {
                             settings.profile.weightKg = kg
