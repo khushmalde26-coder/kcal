@@ -42,10 +42,9 @@ struct ProgressScreen: View {
             List {
                 Section {
                     if weights.isEmpty {
-                        ContentUnavailableView(
-                            "No weigh-ins yet",
-                            systemImage: "scalemass",
-                            description: Text("Weigh yourself a few times a week, same time of day. The trend line smooths out water swings.")
+                        BrandEmptyState(
+                            title: "No weigh-ins yet",
+                            message: Text("Weigh yourself a few times a week, same time of day. The trend line smooths out water swings.")
                         )
                     } else {
                         chart

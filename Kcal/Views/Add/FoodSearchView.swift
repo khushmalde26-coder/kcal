@@ -32,10 +32,9 @@ struct FoodSearchView: View {
                     }
                     Section("Recent") {
                         if savedFoods.isEmpty {
-                            ContentUnavailableView(
-                                "No foods yet",
-                                systemImage: "fork.knife",
-                                description: Text("Search for a food, or scan a barcode or label from Today.")
+                            BrandEmptyState(
+                                title: "No foods yet",
+                                message: Text("Search for a food, or scan a barcode or label from Today.")
                             )
                         }
                         rows(Array(savedFoods.prefix(30)))

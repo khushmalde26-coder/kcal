@@ -37,7 +37,9 @@ targets:
         CFBundleDisplayName: Kcal
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        UILaunchScreen: {}
+        UILaunchScreen:
+          UIImageName: LogoMark
+          UIColorName: LaunchBackground
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSCameraUsageDescription: Kcal uses the camera to scan barcodes, nutrition labels and meals.
         NSHealthShareUsageDescription: Kcal reads your active calories and weight to adjust your daily budget.

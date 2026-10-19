@@ -117,6 +117,20 @@ struct SettingsView: View {
                     Text("UK generic foods: Public Health England (2021) McCance and Widdowson's Composition of Foods Integrated Dataset. Contains public sector information licensed under the Open Government Licence v3.0.")
                 }
                 Section {
+                    VStack(spacing: 6) {
+                        Image("LogoMark")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 44, height: 44)
+                            .accessibilityHidden(true)
+                        Text("Kcal \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .listRowBackground(Color.clear)
+                }
+                Section {
                     Text("Kcal is not medical advice. Talk to a doctor before starting a diet if you are pregnant, under 18, or have a medical condition or a history of eating disorders.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -150,9 +164,12 @@ struct OnboardingView: View {
             Form {
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
-                        Image(systemName: "flame.fill")
-                            .font(.largeTitle)
-                            .foregroundStyle(.green)
+                        Image("Logo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 64)
+                            .accessibilityLabel("Kcal")
+                            .padding(.bottom, 8)
                         Text("Let's set your daily target")
                             .font(.title2.bold())
                         Text("A few details give a starting estimate. You can change them any time in Settings.")

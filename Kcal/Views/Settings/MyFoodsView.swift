@@ -30,10 +30,9 @@ struct MyFoodsView: View {
                 }
             }
             if foods.isEmpty {
-                ContentUnavailableView(
-                    "No foods of your own yet",
-                    systemImage: "fork.knife",
-                    description: Text("Foods you create or scan from a label appear here.")
+                BrandEmptyState(
+                    title: "No foods of your own yet",
+                    message: Text("Foods you create or scan from a label appear here.")
                 )
                 .listRowBackground(Color.clear)
             }
