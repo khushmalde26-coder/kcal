@@ -18,7 +18,7 @@ struct KcalApp: App {
                 .environment(settings)
                 .environment(health)
         }
-        .modelContainer(for: [Food.self, LogEntry.self, WeightEntry.self])
+        .modelContainer(for: [Food.self, LogEntry.self, WeightEntry.self, StapleChoice.self, Recipe.self, RecipeIngredient.self])
     }
 }
 

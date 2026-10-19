@@ -7,12 +7,28 @@ import KcalCore
 struct MyFoodsView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Food.name) private var allFoods: [Food]
+    @Query(sort: \Recipe.name) private var recipes: [Recipe]
     @State private var creating = false
 
     private var foods: [Food] { allFoods.filter(\.isUserCreated) }
 
     var body: some View {
         List {
+            if !recipes.isEmpty {
+                Section("Homemade") {
+                    ForEach(recipes) { recipe in
+                        NavigationLink {
+                            EditRecipeView(recipe: recipe)
+                        } label: {
+                            Label(recipe.name, systemImage: recipe.symbol)
+                        }
+                    }
+                    .onDelete { offsets in
+                        let current = recipes
+                        for index in offsets { context.delete(current[index]) }
+                    }
+                }
+            }
             if foods.isEmpty {
                 ContentUnavailableView(
                     "No foods of your own yet",
@@ -21,6 +37,7 @@ struct MyFoodsView: View {
                 )
                 .listRowBackground(Color.clear)
             }
+            Section(recipes.isEmpty ? "" : "Foods") {
             ForEach(foods) { food in
                 NavigationLink {
                     EditFoodView(food: food)
@@ -31,6 +48,7 @@ struct MyFoodsView: View {
             .onDelete { offsets in
                 let current = foods
                 for index in offsets { context.delete(current[index]) }
+            }
             }
         }
         .navigationTitle("My foods")
@@ -66,5 +84,14 @@ private struct EditFoodView: View {
             }
             dismiss()
         }
+    }
+}
+
+private struct EditRecipeView: View {
+    let recipe: Recipe
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        RecipeEditor(recipe: recipe) { _ in dismiss() }
     }
 }

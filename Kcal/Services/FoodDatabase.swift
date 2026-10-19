@@ -48,6 +48,10 @@ struct FoodDatabase {
         return try? CoFIDIndex(json: data)
     }()
 
+    static func cofidCandidate(named name: String) -> FoodCandidate? {
+        cofid?.food(named: name)?.candidate
+    }
+
     /// Instant, offline generic foods. Empty outside the UK, where USDA is used instead.
     func localSearch(_ query: String) -> [FoodCandidate] {
         guard Self.isUK, query.count >= 2 else { return [] }

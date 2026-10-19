@@ -12,6 +12,7 @@ struct PortionView: View {
 
     @Environment(\.modelContext) private var context
     @Environment(HealthService.self) private var health
+    @Query private var stapleChoices: [StapleChoice]
     @State private var amount: Double
     @State private var unit: PortionUnit
     @State private var meal = Meal.suggested()
@@ -38,6 +39,15 @@ struct PortionView: View {
     }
 
     private var portion: Nutrients { candidate.per100.forPortion(grams: grams) }
+
+    /// A scanned or branded product that looks like a staple, e.g. a milk, and isn't
+    /// already the default for it.
+    private var staplePrompt: StapleSlot? {
+        guard [.openFoodFacts, .label, .custom].contains(candidate.source),
+              let slot = StapleSlot.match(productName: candidate.name) else { return nil }
+        let current = StapleBook(choices: stapleChoices).food(for: slot)
+        return current?.remoteID == candidate.id ? nil : slot
+    }
 
     var body: some View {
         Form {
@@ -92,6 +102,22 @@ struct PortionView: View {
                     Text("1 serving = \(label)")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                }
+            }
+
+            if let slot = staplePrompt {
+                Section {
+                    HStack {
+                        Label("Use as your \(slot.noun) for homemade items?", systemImage: slot.symbol)
+                            .font(.subheadline)
+                        Spacer()
+                        Button("Use") {
+                            context.setStaple(slot, food: existing ?? context.food(for: candidate))
+                        }
+                        .buttonStyle(.glass)
+                    }
+                } footer: {
+                    Text("Your coffee, toast and other homemade items will use it. Change it any time in Settings › My staples.")
                 }
             }
 

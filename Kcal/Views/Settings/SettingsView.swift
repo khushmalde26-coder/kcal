@@ -75,8 +75,11 @@ struct SettingsView: View {
                 if HealthService.isAvailable {
                     Section {
                         Toggle(isOn: healthToggle) {
-                            Label("Apple Health", systemImage: "heart.fill")
-                                .foregroundStyle(.primary, .pink)
+                            Label {
+                                Text("Apple Health")
+                            } icon: {
+                                Image(systemName: "heart.fill").foregroundStyle(.pink)
+                            }
                         }
                         if settings.healthEnabled {
                             Picker("Count activity calories", selection: $settings.activeCredit) {
@@ -93,9 +96,14 @@ struct SettingsView: View {
                 }
                 Section {
                     NavigationLink {
+                        StaplesView()
+                    } label: {
+                        Label("My staples", systemImage: "basket")
+                    }
+                    NavigationLink {
                         MyFoodsView()
                     } label: {
-                        Label("My foods", systemImage: "fork.knife")
+                        Label("My foods and homemade", systemImage: "fork.knife")
                     }
                 }
                 GoalForm(profile: $settings.profile)

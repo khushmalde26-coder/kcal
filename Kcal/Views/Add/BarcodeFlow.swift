@@ -7,6 +7,8 @@ import KcalCore
 /// barcode attached, so the next scan of that product finds it locally.
 struct BarcodeFlow: View {
     let day: Date
+    /// Pick mode: return the product instead of logging it.
+    var onPick: ((Food) -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
@@ -41,9 +43,13 @@ struct BarcodeFlow: View {
             ProgressView("Looking up product…")
                 .navigationTitle("Barcode")
         case .found(let candidate, let food):
-            PortionView(candidate: candidate, existing: food, day: day) { dismiss() }
+            if let onPick {
+                PickConfirmView(candidate: candidate, existing: food, onPick: onPick)
+            } else {
+                PortionView(candidate: candidate, existing: food, day: day) { dismiss() }
+            }
         case .notFound(let code):
-            LabelFlow(day: day, barcode: code, embedded: true)
+            LabelFlow(day: day, barcode: code, embedded: true, onPick: onPick)
         case .failed(let code, let message):
             ContentUnavailableView {
                 Label("Couldn't look that up", systemImage: "wifi.exclamationmark")

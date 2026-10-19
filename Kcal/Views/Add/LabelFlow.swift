@@ -8,6 +8,8 @@ struct LabelFlow: View {
     let day: Date
     let barcode: String?
     var embedded = false
+    /// Pick mode: return the saved product instead of logging it.
+    var onPick: ((Food) -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
@@ -65,7 +67,7 @@ struct LabelFlow: View {
                 draft: draft,
                 rows: rows,
                 title: rows.isEmpty ? "New food" : "Check label",
-                saveTitle: "Save and choose portion",
+                saveTitle: onPick == nil ? "Save and choose portion" : "Save",
                 footer: rows.isEmpty ? nil : "Check these against the label. OCR can misread numbers."
             ) { draft in
                 guard let candidate = draft.candidate(source: rows.isEmpty ? .custom : .label) else { return }
@@ -74,7 +76,11 @@ struct LabelFlow: View {
                 state = .portion(food)
             }
         case .portion(let food):
-            PortionView(candidate: food.candidate, existing: food, day: day) { dismiss() }
+            if let onPick {
+                PickConfirmView(candidate: food.candidate, existing: food, onPick: onPick)
+            } else {
+                PortionView(candidate: food.candidate, existing: food, day: day) { dismiss() }
+            }
         case .failed(let message):
             ContentUnavailableView {
                 Label("Couldn't read the label", systemImage: "text.viewfinder")

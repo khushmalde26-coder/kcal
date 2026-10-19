@@ -38,8 +38,24 @@ extension ModelContext {
     }
 
     @discardableResult
-    func quickAdd(name: String, kcal: Double, meal: Meal, on date: Date) -> LogEntry {
-        let entry = LogEntry(quickAdd: name, kcal: kcal, meal: meal, date: Self.logTime(on: date))
+    func quickAdd(name: String, nutrients: Nutrients, meal: Meal, on date: Date) -> LogEntry {
+        let entry = LogEntry(quickAdd: name, nutrients: nutrients, meal: meal, date: Self.logTime(on: date))
+        insert(entry)
+        return entry
+    }
+
+    @discardableResult
+    func log(_ recipe: Recipe, ingredients: [ResolvedIngredient], servings: Double, meal: Meal, on date: Date) -> LogEntry {
+        let share = servings / max(recipe.servings, 0.01)
+        let total = RecipeMath.total(ingredients.map { ($0.per100, $0.grams) })
+        let notes = ingredients.map { $0.note(scale: share) }
+        let grams = ingredients.reduce(0) { $0 + $1.grams } * share
+        let entry = LogEntry(
+            recipe: recipe, nutrients: total.scaled(by: share), grams: grams,
+            notes: notes, meal: meal, date: Self.logTime(on: date)
+        )
+        recipe.useCount += 1
+        recipe.lastUsedAt = .now
         insert(entry)
         return entry
     }

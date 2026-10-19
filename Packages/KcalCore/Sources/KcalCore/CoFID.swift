@@ -85,6 +85,11 @@ public struct CoFIDIndex: Sendable {
             .map { foods[$0.index].candidate }
     }
 
+    /// Exact name lookup, for staple fallbacks and template bases.
+    public func food(named name: String) -> CoFIDFood? {
+        foods.first { $0.name == name }
+    }
+
     static func fold(_ s: String) -> String {
         s.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
     }

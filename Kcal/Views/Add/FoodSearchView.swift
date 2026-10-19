@@ -5,16 +5,19 @@ import KcalCore
 struct FoodSearchView: View {
     let day: Date
     let isSheet: Bool
+    /// Pick mode: return the chosen food instead of logging it.
+    var onPick: ((Food) -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @Query(sort: \Food.lastUsedAt, order: .reverse) private var savedFoods: [Food]
+    @Query(sort: \Recipe.useCount, order: .reverse) private var recipes: [Recipe]
     @State private var query = ""
     @State private var local: [FoodCandidate] = []
     @State private var remote: [FoodCandidate] = []
     @State private var newFood: NewFood?
     @State private var isSearching = false
-    @State private var path: [FoodCandidate] = []
+    @State private var path = NavigationPath()
     @State private var loggedName: String?
 
     private let database = FoodDatabase()
@@ -38,6 +41,16 @@ struct FoodSearchView: View {
                         rows(Array(savedFoods.prefix(30)))
                     }
                 } else {
+                    let homemade = onPick == nil ? recipes.filter { $0.name.localizedStandardContains(query) } : []
+                    if !homemade.isEmpty {
+                        Section("Homemade") {
+                            ForEach(homemade) { recipe in
+                                NavigationLink(value: recipe) {
+                                    Label(recipe.name, systemImage: recipe.symbol)
+                                }
+                            }
+                        }
+                    }
                     let saved = savedFoods.filter { $0.name.localizedStandardContains(query) }
                     if !saved.isEmpty {
                         Section("Your foods") { rows(saved) }
@@ -82,7 +95,7 @@ struct FoodSearchView: View {
                     }
                 }
             }
-            .navigationTitle("Add food")
+            .navigationTitle(onPick == nil ? "Add food" : "Choose a food")
             .searchable(text: $query, prompt: "Banana, oat milk, chicken…")
             .onSubmit(of: .search) { Task { await searchRemote() } }
             // Remote search waits for a pause in typing; Open Food Facts allows ~10 searches a minute.
@@ -95,9 +108,16 @@ struct FoodSearchView: View {
                 await searchRemote()
             }
             .navigationDestination(for: FoodCandidate.self) { candidate in
-                PortionView(candidate: candidate, existing: existing(for: candidate), day: day) {
-                    logged(candidate.name)
+                if let onPick {
+                    PickConfirmView(candidate: candidate, existing: existing(for: candidate), onPick: onPick)
+                } else {
+                    PortionView(candidate: candidate, existing: existing(for: candidate), day: day) {
+                        logged(candidate.name)
+                    }
                 }
+            }
+            .navigationDestination(for: Recipe.self) { recipe in
+                RecipeLogView(recipe: recipe, day: day) { logged(recipe.name) }
             }
             .toolbar {
                 if isSheet {
@@ -169,7 +189,7 @@ struct FoodSearchView: View {
             dismiss()
             return
         }
-        path.removeAll()
+        path = NavigationPath()
         query = ""
         withAnimation(.smooth) { loggedName = name }
         Task {

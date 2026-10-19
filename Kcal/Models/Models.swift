@@ -29,6 +29,10 @@ final class Food {
 
     @Relationship(deleteRule: .nullify, inverse: \LogEntry.food)
     var entries: [LogEntry]? = []
+    @Relationship(deleteRule: .nullify, inverse: \RecipeIngredient.food)
+    var recipeUses: [RecipeIngredient]? = []
+    @Relationship(deleteRule: .nullify, inverse: \StapleChoice.food)
+    var stapleChoices: [StapleChoice]? = []
 
     init(candidate: FoodCandidate) {
         sourceRaw = candidate.source.rawValue
@@ -106,6 +110,11 @@ final class LogEntry {
     var saturatedFat: Double?
     var salt: Double?
     var food: Food?
+    /// Set for homemade items; the values are a snapshot, so editing the recipe later
+    /// doesn't change what was logged.
+    var recipe: Recipe?
+    /// "Semi-skimmed milk, 30 ml" lines for homemade items, as logged.
+    var ingredientNotes: [String] = []
     /// Base sync identifier of the samples written to Apple Health, if any.
     var healthSyncID: String?
     /// Bumped when the entry is edited so Health replaces the old samples.
@@ -120,13 +129,25 @@ final class LogEntry {
         setPortion(grams: grams)
     }
 
-    /// A one-off calorie number with no food behind it.
-    init(quickAdd name: String, kcal: Double, meal: Meal, date: Date) {
+    /// A one-off calorie number with no food behind it, optionally with macros.
+    init(quickAdd name: String, nutrients: Nutrients, meal: Meal, date: Date) {
         self.name = name
         self.mealRaw = meal.rawValue
         self.timestamp = date
         self.day = Calendar.current.startOfDay(for: date)
-        self.kcal = kcal
+        self.nutrients = nutrients
+    }
+
+    /// A homemade item, with its ingredients resolved at log time.
+    init(recipe: Recipe, nutrients: Nutrients, grams: Double, notes: [String], meal: Meal, date: Date) {
+        self.recipe = recipe
+        self.name = recipe.name
+        self.grams = grams
+        self.ingredientNotes = notes
+        self.mealRaw = meal.rawValue
+        self.timestamp = date
+        self.day = Calendar.current.startOfDay(for: date)
+        self.nutrients = nutrients
     }
 
     var isQuickAdd: Bool { food == nil && grams == 0 }
@@ -186,6 +207,70 @@ final class WeightEntry {
         self.date = date
         self.kg = kg
     }
+}
+
+/// The user's own product for a staple slot (their milk, their bread).
+@Model
+final class StapleChoice {
+    var slotRaw: String = ""
+    var food: Food?
+
+    init(slot: StapleSlot, food: Food?) {
+        slotRaw = slot.rawValue
+        self.food = food
+    }
+
+    var slot: StapleSlot? { StapleSlot(rawValue: slotRaw) }
+}
+
+/// A homemade item built from staples and foods, e.g. "My morning coffee".
+@Model
+final class Recipe {
+    var name: String = ""
+    var symbol: String = "fork.knife"
+    /// How many servings the ingredients make. Logging uses one serving by default.
+    var servings: Double = 1
+    var templateID: String?
+    var createdAt: Date = Date.now
+    var lastUsedAt: Date = Date.now
+    var useCount: Int = 0
+
+    @Relationship(deleteRule: .cascade, inverse: \RecipeIngredient.recipe)
+    var ingredients: [RecipeIngredient]? = []
+    @Relationship(deleteRule: .nullify, inverse: \LogEntry.recipe)
+    var entries: [LogEntry]? = []
+
+    init(name: String, symbol: String, servings: Double = 1, templateID: String? = nil) {
+        self.name = name
+        self.symbol = symbol
+        self.servings = servings
+        self.templateID = templateID
+    }
+
+    var sortedIngredients: [RecipeIngredient] {
+        (ingredients ?? []).sorted { $0.order < $1.order }
+    }
+}
+
+/// Either a staple slot (resolved to the current default when logging) or a fixed food.
+@Model
+final class RecipeIngredient {
+    var order: Int = 0
+    var slotRaw: String?
+    var food: Food?
+    var grams: Double = 0
+    var unitLabel: String?
+    var recipe: Recipe?
+
+    init(order: Int, slot: StapleSlot?, food: Food?, grams: Double, unitLabel: String?) {
+        self.order = order
+        self.slotRaw = slot?.rawValue
+        self.food = food
+        self.grams = grams
+        self.unitLabel = unitLabel
+    }
+
+    var slot: StapleSlot? { slotRaw.flatMap(StapleSlot.init(rawValue:)) }
 }
 
 enum Meal: String, CaseIterable, Identifiable, Codable {

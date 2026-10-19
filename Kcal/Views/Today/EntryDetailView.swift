@@ -40,6 +40,7 @@ struct EntryDetailView: View {
 
     private var source: String {
         if entry.isQuickAdd { return FoodSource.quickAdd.label }
+        if entry.recipe != nil || !entry.ingredientNotes.isEmpty { return "Homemade" }
         return entry.food?.source.label ?? "Food since deleted"
     }
 
@@ -52,12 +53,20 @@ struct EntryDetailView: View {
                             .font(.system(size: 56, weight: .bold, design: .rounded))
                             .monospacedDigit()
                             .contentTransition(.numericText(value: portion.kcal))
-                        Text(entry.isQuickAdd ? "kcal" : "kcal in \(grams.formatted(.number.precision(.fractionLength(0...1)))) \(unit)")
+                        Text(entry.isQuickAdd || !entry.ingredientNotes.isEmpty ? "kcal" : "kcal in \(grams.formatted(.number.precision(.fractionLength(0...1)))) \(unit)")
                             .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity)
                     .listRowBackground(Color.clear)
                     .animation(.smooth, value: portion)
+                }
+
+                if !entry.ingredientNotes.isEmpty {
+                    Section("Ingredients") {
+                        ForEach(entry.ingredientNotes, id: \.self) { note in
+                            Text(note).font(.subheadline)
+                        }
+                    }
                 }
 
                 if !entry.isQuickAdd {

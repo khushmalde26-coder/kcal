@@ -4,7 +4,7 @@ import KcalCore
 
 /// Which add flow is open from Today.
 enum AddFlow: String, Identifiable {
-    case search, barcode, label, photo, quickAdd
+    case search, barcode, label, photo, homemade
     var id: String { rawValue }
 }
 
@@ -50,9 +50,7 @@ struct TodayView: View {
                     case .barcode: BarcodeFlow(day: day)
                     case .label: LabelFlow(day: day, barcode: nil)
                     case .photo: MealPhotoFlow(day: day)
-                    case .quickAdd:
-                        QuickAddView(day: day)
-                            .presentationDetents([.medium])
+                    case .homemade: HomemadeHub(day: day)
                     }
                 }
         }
@@ -148,12 +146,18 @@ private struct DayLog: View {
 private struct EntryRow: View {
     let entry: LogEntry
 
+    private var subtitle: String {
+        if entry.isQuickAdd { return "Calories only" }
+        if !entry.ingredientNotes.isEmpty { return "Homemade" }
+        return "\(Int(entry.grams.rounded())) \(entry.food?.unit ?? "g")"
+    }
+
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.name)
                     .lineLimit(1)
-                Text(entry.isQuickAdd ? "Calories only" : "\(Int(entry.grams.rounded())) \(entry.food?.unit ?? "g")")
+                Text(subtitle)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -165,7 +169,7 @@ private struct EntryRow: View {
     }
 }
 
-/// Floating glass controls for search, the camera flows and quick add.
+/// Floating glass controls for search, the camera flows, and homemade items with quick add.
 /// Glass is used for controls only; content stays on plain backgrounds, per Apple's guidance.
 private struct QuickAddBar: View {
     @Binding var flow: AddFlow?
@@ -181,7 +185,7 @@ private struct QuickAddBar: View {
                 if photoAvailable {
                     button(.photo, "Photo", "camera")
                 }
-                button(.quickAdd, "Quick add", "plus")
+                button(.homemade, "Homemade and quick add", "plus")
             }
         }
     }
@@ -199,60 +203,5 @@ private struct QuickAddBar: View {
         .glassEffect(.regular.interactive(), in: .circle)
         .glassEffectID(target.rawValue, in: glass)
         .accessibilityLabel(title)
-    }
-}
-
-/// Log a calorie number without a food, for meals out or when there's no label.
-private struct QuickAddView: View {
-    let day: Date
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var context
-    @Environment(HealthService.self) private var health
-    @State private var kcal: Double?
-    @State private var name = ""
-    @State private var meal = Meal.suggested()
-    @FocusState private var kcalFocused: Bool
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    HStack {
-                        TextField("Calories", value: $kcal, format: .number.precision(.fractionLength(0)))
-                            .keyboardType(.numberPad)
-                            .font(.title2.monospacedDigit())
-                            .focused($kcalFocused)
-                        Text("kcal").foregroundStyle(.secondary)
-                    }
-                    TextField("Name (optional)", text: $name)
-                }
-                Section {
-                    Picker("Meal", selection: $meal) {
-                        ForEach(Meal.allCases) { Text($0.title).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-                }
-            }
-            .navigationTitle("Quick add")
-            .navigationBarTitleDisplayMode(.inline)
-            .onAppear { kcalFocused = true }
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", systemImage: "xmark") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Log", systemImage: "checkmark", action: log)
-                        .disabled((kcal ?? 0) <= 0)
-                }
-            }
-        }
-    }
-
-    private func log() {
-        guard let kcal, kcal > 0 else { return }
-        let title = name.trimmingCharacters(in: .whitespaces)
-        let entry = context.quickAdd(name: title.isEmpty ? "Quick add" : title, kcal: kcal, meal: meal, on: day)
-        Task { await health.save([entry]) }
-        dismiss()
     }
 }
