@@ -58,6 +58,7 @@ struct BarcodeFlow: View {
             } actions: {
                 Button("Try again") { Task { await lookUp(code) } }
                     .buttonStyle(.glassProminent)
+                    .foregroundStyle(Theme.onTint)
                 Button("Scan the label instead") { state = .notFound(code) }
                     .buttonStyle(.glass)
             }
@@ -87,7 +88,9 @@ struct BarcodeFlow: View {
                 } footer: {
                     Text("Camera scanning isn't available on this device.")
                 }
+                .listRowBackground(Theme.surface)
             }
+            .themedList()
             .navigationTitle("Barcode")
         }
     }

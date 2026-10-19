@@ -31,6 +31,7 @@ struct FoodPicker: View {
                 } footer: {
                     Text("Scanning the product you actually buy gives the most accurate numbers.")
                 }
+                .listRowBackground(Theme.surface)
                 if !suggestions.isEmpty {
                     Section("Products you've used") {
                         ForEach(suggestions) { food in
@@ -40,8 +41,10 @@ struct FoodPicker: View {
                             .tint(.primary)
                         }
                     }
+                    .listRowBackground(Theme.surface)
                 }
             }
+            .themedList()
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -74,18 +77,21 @@ struct PickConfirmView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(candidate.name).font(.title3.bold())
                     if let brand = candidate.brand {
-                        Text(brand).foregroundStyle(.secondary)
+                        Text(brand).foregroundStyle(Theme.secondaryText)
                     }
                 }
                 .listRowBackground(Color.clear)
             }
+            .listRowBackground(Theme.surface)
             Section("Per 100 \(candidate.isLiquid ? "ml" : "g")") {
                 row("Calories", candidate.per100.kcal, "kcal")
                 row("Protein", candidate.per100.protein, "g")
                 row("Carbs", candidate.per100.carbs, "g")
                 row("Fat", candidate.per100.fat, "g")
             }
+            .listRowBackground(Theme.surface)
         }
+        .themedList()
         .navigationTitle("Use this product?")
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
@@ -98,6 +104,7 @@ struct PickConfirmView: View {
                     .padding(.vertical, 6)
             }
             .buttonStyle(.glassProminent)
+            .foregroundStyle(Theme.onTint)
             .padding()
         }
     }

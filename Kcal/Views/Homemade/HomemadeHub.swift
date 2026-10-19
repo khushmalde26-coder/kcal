@@ -29,6 +29,7 @@ struct HomemadeHub: View {
                             }
                         }
                     }
+                    .listRowBackground(Theme.surface)
                 }
 
                 Section {
@@ -45,13 +46,16 @@ struct HomemadeHub: View {
                 } footer: {
                     Text("Built from the milk, bread and other products you buy. Set them in Settings › My staples, or as you go.")
                 }
+                .listRowBackground(Theme.surface)
 
                 Section {
                     NavigationLink(value: Route.quickAdd) {
                         Label("Quick add calories", systemImage: "number")
                     }
                 }
+                .listRowBackground(Theme.surface)
             }
+            .themedList()
             .navigationTitle("Homemade")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -114,10 +118,11 @@ struct QuickAddView: View {
                         .keyboardType(.numberPad)
                         .font(.title2.monospacedDigit())
                         .focused($kcalFocused)
-                    Text("kcal").foregroundStyle(.secondary)
+                    Text("kcal").foregroundStyle(Theme.secondaryText)
                 }
                 TextField("Name (optional)", text: $name)
             }
+            .listRowBackground(Theme.surface)
 
             if term.count >= 2 {
                 let matchingRecipes = recipes.filter { $0.name.localizedStandardContains(term) }.prefix(3)
@@ -136,6 +141,7 @@ struct QuickAddView: View {
                             .tint(.primary)
                         }
                     }
+                    .listRowBackground(Theme.surface)
                 }
             }
 
@@ -144,6 +150,7 @@ struct QuickAddView: View {
                 grams("Carbs", $carbs)
                 grams("Fat", $fat)
             }
+            .listRowBackground(Theme.surface)
 
             Section {
                 Picker("Meal", selection: $meal) {
@@ -151,7 +158,9 @@ struct QuickAddView: View {
                 }
                 .pickerStyle(.segmented)
             }
+            .listRowBackground(Theme.surface)
         }
+        .themedList()
         .contentMargins(.bottom, 96, for: .scrollContent)
         .navigationTitle("Quick add")
         .navigationBarTitleDisplayMode(.inline)
@@ -164,6 +173,7 @@ struct QuickAddView: View {
                     .padding(.vertical, 6)
             }
             .buttonStyle(.glassProminent)
+            .foregroundStyle(Theme.onTint)
             .disabled((kcal ?? 0) <= 0)
             .padding()
         }
@@ -177,7 +187,7 @@ struct QuickAddView: View {
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: 80)
-            Text("g").foregroundStyle(.secondary)
+            Text("g").foregroundStyle(Theme.secondaryText)
         }
     }
 
@@ -216,7 +226,7 @@ struct IngredientAmount: View {
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: 80)
-            Text(unit).foregroundStyle(.secondary)
+            Text(unit).foregroundStyle(Theme.secondaryText)
         }
     }
 

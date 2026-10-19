@@ -29,6 +29,7 @@ struct FoodSearchView: View {
                     let favourites = savedFoods.filter(\.isFavorite)
                     if !favourites.isEmpty {
                         Section("Favourites") { rows(favourites) }
+                        .listRowBackground(Theme.surface)
                     }
                     Section("Recent") {
                         if savedFoods.isEmpty {
@@ -39,6 +40,7 @@ struct FoodSearchView: View {
                         }
                         rows(Array(savedFoods.prefix(30)))
                     }
+                    .listRowBackground(Theme.surface)
                 } else {
                     let homemade = onPick == nil ? recipes.filter { $0.name.localizedStandardContains(query) } : []
                     if !homemade.isEmpty {
@@ -49,10 +51,12 @@ struct FoodSearchView: View {
                                 }
                             }
                         }
+                        .listRowBackground(Theme.surface)
                     }
                     let saved = savedFoods.filter { $0.name.localizedStandardContains(query) }
                     if !saved.isEmpty {
                         Section("Your foods") { rows(saved) }
+                        .listRowBackground(Theme.surface)
                     }
                     if !local.isEmpty {
                         Section {
@@ -66,6 +70,7 @@ struct FoodSearchView: View {
                         } footer: {
                             Text("McCance and Widdowson's Composition of Foods, UK.")
                         }
+                        .listRowBackground(Theme.surface)
                     }
                     Section {
                         ForEach(remote) { candidate in
@@ -83,6 +88,7 @@ struct FoodSearchView: View {
                              ? "Packaged products from Open Food Facts, UK products first."
                              : "Generic foods from USDA, packaged products from Open Food Facts.")
                     }
+                    .listRowBackground(Theme.surface)
                     Section {
                         Button {
                             newFood = NewFood(name: query.trimmingCharacters(in: .whitespaces))
@@ -92,8 +98,10 @@ struct FoodSearchView: View {
                     } footer: {
                         Text("Can't find it? Add it with your own values.")
                     }
+                    .listRowBackground(Theme.surface)
                 }
             }
+            .themedList()
             .navigationTitle(onPick == nil ? "Add food" : "Choose a food")
             .searchable(text: $query, prompt: "Banana, oat milk, chicken…")
             .onSubmit(of: .search) { Task { await searchRemote() } }
@@ -218,7 +226,7 @@ struct FoodRow: View {
             }
             Text(detail)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.secondaryText)
                 .lineLimit(1)
         }
     }

@@ -21,6 +21,7 @@ struct GoalForm: View {
                 ForEach(ActivityLevel.allCases, id: \.self) { Text($0.label).tag($0) }
             }
         }
+        .listRowBackground(Theme.surface)
 
         Section {
             Picker("Goal", selection: $profile.weeklyLossKg) {
@@ -37,6 +38,7 @@ struct GoalForm: View {
                 Text(note).foregroundStyle(.orange)
             }
         }
+        .listRowBackground(Theme.surface)
 
         Section {
             LabeledContent("Daily calories", value: "\(Int(target.kcal)) kcal")
@@ -49,6 +51,7 @@ struct GoalForm: View {
         } footer: {
             Text("Estimated with the Mifflin-St Jeor equation. Real needs vary by a few hundred kcal; after 2 to 3 weeks your weight trend is the better guide.")
         }
+        .listRowBackground(Theme.surface)
     }
 
     private func measurement(_ title: String, _ value: Binding<Double>, unit: String) -> some View {
@@ -59,7 +62,7 @@ struct GoalForm: View {
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: 80)
-            Text(unit).foregroundStyle(.secondary)
+            Text(unit).foregroundStyle(Theme.secondaryText)
         }
     }
 }
@@ -91,8 +94,9 @@ struct SettingsView: View {
                     } header: {
                         Text("Apple Health")
                     } footer: {
-                        Text("Your goal stays the same every day. Extra activity beyond your usual level adds amber calories you can eat, counted at 75% by default. Kcal also saves the food you log and syncs weigh-ins.")
+                        Text("Your goal stays the same every day. Extra activity beyond your usual level adds extra calories you can eat (the blush part of the ring), counted at 75% by default. Kcal also saves the food you log and syncs weigh-ins.")
                     }
+                    .listRowBackground(Theme.surface)
                 }
                 Section {
                     NavigationLink {
@@ -106,6 +110,7 @@ struct SettingsView: View {
                         Label("My foods and homemade", systemImage: "fork.knife")
                     }
                 }
+                .listRowBackground(Theme.surface)
                 GoalForm(profile: $settings.profile)
                 Section {
                     Link("Open Food Facts (ODbL)", destination: URL(string: "https://world.openfoodfacts.org")!)
@@ -116,6 +121,7 @@ struct SettingsView: View {
                 } footer: {
                     Text("UK generic foods: Public Health England (2021) McCance and Widdowson's Composition of Foods Integrated Dataset. Contains public sector information licensed under the Open Government Licence v3.0.")
                 }
+                .listRowBackground(Theme.surface)
                 Section {
                     VStack(spacing: 6) {
                         Image("LogoMark")
@@ -125,17 +131,20 @@ struct SettingsView: View {
                             .accessibilityHidden(true)
                         Text("Kcal \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")")
                             .font(.footnote)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.secondaryText)
                     }
                     .frame(maxWidth: .infinity)
                     .listRowBackground(Color.clear)
                 }
+                .listRowBackground(Theme.surface)
                 Section {
                     Text("Kcal is not medical advice. Talk to a doctor before starting a diet if you are pregnant, under 18, or have a medical condition or a history of eating disorders.")
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.secondaryText)
                 }
+                .listRowBackground(Theme.surface)
             }
+            .themedList()
             .navigationTitle("Settings")
         }
     }
@@ -173,10 +182,11 @@ struct OnboardingView: View {
                         Text("Let's set your daily target")
                             .font(.title2.bold())
                         Text("A few details give a starting estimate. You can change them any time in Settings.")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.secondaryText)
                     }
                     .listRowBackground(Color.clear)
                 }
+                .listRowBackground(Theme.surface)
                 if HealthService.isAvailable {
                     Section {
                         if settings.healthEnabled {
@@ -192,9 +202,11 @@ struct OnboardingView: View {
                     } footer: {
                         Text("Optional. Days you move more than usual earn extra calories, and food and weigh-ins are saved to Health.")
                     }
+                    .listRowBackground(Theme.surface)
                 }
                 GoalForm(profile: $profile)
             }
+            .themedList()
             .contentMargins(.bottom, 96, for: .scrollContent)
             .safeAreaInset(edge: .bottom) {
                 Button {
@@ -210,6 +222,7 @@ struct OnboardingView: View {
                         .padding(.vertical, 6)
                 }
                 .buttonStyle(.glassProminent)
+                .foregroundStyle(Theme.onTint)
                 .padding()
             }
         }

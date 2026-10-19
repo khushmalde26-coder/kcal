@@ -50,7 +50,7 @@ struct TemplateSetupView: View {
                                 if staples.isDefault(slot) {
                                     Text("Typical UK \(slot.noun). Scan yours for exact numbers.")
                                         .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(Theme.secondaryText)
                                 }
                             }
                             Spacer()
@@ -64,6 +64,7 @@ struct TemplateSetupView: View {
                 } header: {
                     Text(draft.question ?? "")
                 }
+                .listRowBackground(Theme.surface)
             }
 
             Section {
@@ -73,7 +74,9 @@ struct TemplateSetupView: View {
             } footer: {
                 Text("Changing your default \(drafts.compactMap(\.slot).first?.noun ?? "products") later updates future logs automatically.")
             }
+            .listRowBackground(Theme.surface)
         }
+        .themedList()
         .contentMargins(.bottom, 140, for: .scrollContent)
         .navigationTitle(template.name)
         .navigationBarTitleDisplayMode(.inline)
@@ -93,6 +96,7 @@ struct TemplateSetupView: View {
                         .padding(.vertical, 6)
                 }
                 .buttonStyle(.glassProminent)
+                .foregroundStyle(Theme.onTint)
                 .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || resolved.isEmpty)
             }
             .padding()

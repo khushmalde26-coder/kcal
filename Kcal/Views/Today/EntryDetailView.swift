@@ -54,12 +54,13 @@ struct EntryDetailView: View {
                             .monospacedDigit()
                             .contentTransition(.numericText(value: portion.kcal))
                         Text(entry.isQuickAdd || !entry.ingredientNotes.isEmpty ? "kcal" : "kcal in \(grams.formatted(.number.precision(.fractionLength(0...1)))) \(unit)")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.secondaryText)
                     }
                     .frame(maxWidth: .infinity)
                     .listRowBackground(Color.clear)
                     .animation(.smooth, value: portion)
                 }
+                .listRowBackground(Theme.surface)
 
                 if !entry.ingredientNotes.isEmpty {
                     Section("Ingredients") {
@@ -67,18 +68,21 @@ struct EntryDetailView: View {
                             Text(note).font(.subheadline)
                         }
                     }
+                    .listRowBackground(Theme.surface)
                 }
 
                 if !entry.isQuickAdd {
                     Section("Macros") {
-                        macroRow("Protein", portion.protein, goal: target.macros.protein, tint: .blue)
-                        macroRow("Carbs", portion.carbs, goal: target.macros.carbs, tint: .teal)
-                        macroRow("Fat", portion.fat, goal: target.macros.fat, tint: .pink)
+                        macroRow("Protein", portion.protein, goal: target.macros.protein, tint: Theme.protein)
+                        macroRow("Carbs", portion.carbs, goal: target.macros.carbs, tint: Theme.carbs)
+                        macroRow("Fat", portion.fat, goal: target.macros.fat, tint: Theme.fat)
                     }
+                    .listRowBackground(Theme.surface)
 
                     Section("Where the calories come from") {
                         CalorieSplit(nutrients: portion)
                     }
+                    .listRowBackground(Theme.surface)
 
                     Section {
                         detailRow("Fibre", portion.fibre, per100: entry.per100?.fibre, light: nil)
@@ -90,6 +94,7 @@ struct EntryDetailView: View {
                     } footer: {
                         Text("Colours follow UK front-of-pack guidance per 100 \(unit): green low, amber medium, red high.")
                     }
+                    .listRowBackground(Theme.surface)
 
                     if let per100 = entry.per100 {
                         Section("Per 100 \(unit)") {
@@ -98,6 +103,7 @@ struct EntryDetailView: View {
                             value("Carbs", per100.carbs, unit: "g")
                             value("Fat", per100.fat, unit: "g")
                         }
+                        .listRowBackground(Theme.surface)
                     }
                 }
 
@@ -117,6 +123,7 @@ struct EntryDetailView: View {
                         }
                     }
                 }
+                .listRowBackground(Theme.surface)
 
                 Section {
                     Button("Delete entry", systemImage: "trash", role: .destructive) {
@@ -124,7 +131,9 @@ struct EntryDetailView: View {
                     }
                     .tint(.red)
                 }
+                .listRowBackground(Theme.surface)
             }
+            .themedList()
             .contentMargins(.bottom, 96, for: .scrollContent)
             .navigationTitle(entry.name)
             .navigationBarTitleDisplayMode(.inline)
@@ -142,6 +151,7 @@ struct EntryDetailView: View {
                             .padding(.vertical, 6)
                     }
                     .buttonStyle(.glassProminent)
+                    .foregroundStyle(Theme.onTint)
                     .disabled(entry.isQuickAdd ? quickKcal <= 0 : grams <= 0)
                     .padding()
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -184,7 +194,7 @@ struct EntryDetailView: View {
                 if goal > 0 {
                     Text("\(Int((grams / goal * 100).rounded()))% of goal")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.secondaryText)
                         .monospacedDigit()
                         .frame(minWidth: 76, alignment: .trailing)
                 }
@@ -230,7 +240,7 @@ struct EntryDetailView: View {
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: 100)
-            Text(unit).foregroundStyle(.secondary)
+            Text(unit).foregroundStyle(Theme.secondaryText)
         }
     }
 }
@@ -240,7 +250,7 @@ struct CalorieSplit: View {
     let nutrients: Nutrients
 
     private var parts: [(name: String, kcal: Double, tint: Color)] {
-        [("Protein", nutrients.protein * 4, .blue), ("Carbs", nutrients.carbs * 4, .teal), ("Fat", nutrients.fat * 9, .pink)]
+        [("Protein", nutrients.protein * 4, Theme.protein), ("Carbs", nutrients.carbs * 4, Theme.carbs), ("Fat", nutrients.fat * 9, Theme.fat)]
     }
 
     var body: some View {

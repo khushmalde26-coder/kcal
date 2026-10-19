@@ -28,6 +28,7 @@ struct MyFoodsView: View {
                         for index in offsets { context.delete(current[index]) }
                     }
                 }
+                .listRowBackground(Theme.surface)
             }
             if foods.isEmpty {
                 BrandEmptyState(
@@ -49,7 +50,9 @@ struct MyFoodsView: View {
                 for index in offsets { context.delete(current[index]) }
             }
             }
+            .listRowBackground(Theme.surface)
         }
+        .themedList()
         .navigationTitle("My foods")
         .toolbar {
             Button("Create food", systemImage: "plus") { creating = true }

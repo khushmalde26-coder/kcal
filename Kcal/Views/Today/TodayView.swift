@@ -104,6 +104,7 @@ private struct DayLog: View {
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
             }
+            .listRowBackground(Theme.surface)
 
             ForEach(Meal.allCases) { meal in
                 let items = entries.filter { $0.meal == meal }
@@ -132,8 +133,10 @@ private struct DayLog: View {
                             .monospacedDigit()
                     }
                 }
+                .listRowBackground(Theme.surface)
             }
         }
+        .themedList()
         .listStyle(.insetGrouped)
         .contentMargins(.bottom, 96, for: .scrollContent)
         .animation(.smooth, value: entries.count)
@@ -159,12 +162,12 @@ private struct EntryRow: View {
                     .lineLimit(1)
                 Text(subtitle)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.secondaryText)
             }
             Spacer()
             Text("\(Int(entry.kcal.rounded()))")
                 .font(.body.monospacedDigit())
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.secondaryText)
         }
     }
 }

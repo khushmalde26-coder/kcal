@@ -42,7 +42,7 @@ struct RecipeLogView: View {
                         .font(.system(size: 56, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .contentTransition(.numericText(value: portion.kcal))
-                    Text("kcal").foregroundStyle(.secondary)
+                    Text("kcal").foregroundStyle(Theme.secondaryText)
                     HStack(spacing: 24) {
                         macro("Protein", portion.protein)
                         macro("Carbs", portion.carbs)
@@ -54,6 +54,7 @@ struct RecipeLogView: View {
                 .listRowBackground(Color.clear)
                 .animation(.smooth, value: portion)
             }
+            .listRowBackground(Theme.surface)
 
             Section {
                 ForEach($drafts) { $draft in
@@ -64,7 +65,7 @@ struct RecipeLogView: View {
                                 Text(ingredient?.name ?? "Missing food").lineLimit(2)
                                 Text(ingredient.map { "\($0.amountText()) · \(Int($0.portion.kcal.rounded())) kcal" } ?? "")
                                     .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(Theme.secondaryText)
                             }
                             Spacer()
                             Button("Swap") { swapping = draft.id }
@@ -87,12 +88,14 @@ struct RecipeLogView: View {
             } footer: {
                 Text("Swaps and amounts here apply to this log only.")
             }
+            .listRowBackground(Theme.surface)
 
             Section("How much") {
                 Stepper(value: $servings, in: 0.5...10, step: 0.5) {
                     Text(servingsLabel)
                 }
             }
+            .listRowBackground(Theme.surface)
 
             Section("Meal") {
                 Picker("Meal", selection: $meal) {
@@ -100,7 +103,9 @@ struct RecipeLogView: View {
                 }
                 .pickerStyle(.segmented)
             }
+            .listRowBackground(Theme.surface)
         }
+        .themedList()
         .contentMargins(.bottom, 96, for: .scrollContent)
         .navigationTitle(recipe.name)
         .navigationBarTitleDisplayMode(.inline)
@@ -112,6 +117,7 @@ struct RecipeLogView: View {
                     .padding(.vertical, 6)
             }
             .buttonStyle(.glassProminent)
+            .foregroundStyle(Theme.onTint)
             .disabled(resolved.isEmpty)
             .padding()
         }
@@ -137,7 +143,7 @@ struct RecipeLogView: View {
         VStack(spacing: 2) {
             Text("\(grams, format: .number.precision(.fractionLength(0...1))) g")
                 .font(.headline.monospacedDigit())
-            Text(name).font(.caption).foregroundStyle(.secondary)
+            Text(name).font(.caption).foregroundStyle(Theme.secondaryText)
         }
     }
 

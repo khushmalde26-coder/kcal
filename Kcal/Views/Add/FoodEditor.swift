@@ -95,6 +95,7 @@ struct FoodEditor: View {
                             .foregroundStyle(.orange)
                     }
                 }
+                .listRowBackground(Theme.surface)
             }
 
             Section("Product") {
@@ -105,6 +106,7 @@ struct FoodEditor: View {
                     .keyboardType(.numberPad)
                 Toggle("Drink (values per ml)", isOn: $draft.isLiquid)
             }
+            .listRowBackground(Theme.surface)
 
             Section {
                 Picker("Values are", selection: $draft.basis) {
@@ -120,6 +122,7 @@ struct FoodEditor: View {
             } footer: {
                 if let footer { Text(footer) }
             }
+            .listRowBackground(Theme.surface)
 
             Section("More detail (optional)") {
                 optional("Fibre", $draft.values.fibre)
@@ -127,12 +130,13 @@ struct FoodEditor: View {
                 optional("Saturates", $draft.values.saturatedFat)
                 optional("Salt", $draft.values.salt)
             }
+            .listRowBackground(Theme.surface)
 
             Section {
                 HStack {
                     TextField("Optional", value: $draft.servingGrams, format: .number)
                         .keyboardType(.decimalPad)
-                    Text(draft.unit).foregroundStyle(.secondary)
+                    Text(draft.unit).foregroundStyle(Theme.secondaryText)
                 }
             } header: {
                 Text("Serving size")
@@ -141,6 +145,7 @@ struct FoodEditor: View {
                     Text("Needed to work out values per 100 \(draft.unit).")
                 }
             }
+            .listRowBackground(Theme.surface)
 
             if !rows.isEmpty {
                 Section {
@@ -150,8 +155,10 @@ struct FoodEditor: View {
                         }
                     }
                 }
+                .listRowBackground(Theme.surface)
             }
         }
+        .themedList()
         .contentMargins(.bottom, 96, for: .scrollContent)
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
@@ -164,6 +171,7 @@ struct FoodEditor: View {
                     .padding(.vertical, 6)
             }
             .buttonStyle(.glassProminent)
+            .foregroundStyle(Theme.onTint)
             .disabled(!draft.isValid)
             .padding()
         }
@@ -178,7 +186,7 @@ struct FoodEditor: View {
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: 100)
             Text(unit)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.secondaryText)
                 .frame(width: 36, alignment: .leading)
         }
     }
@@ -192,7 +200,7 @@ struct FoodEditor: View {
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: 100)
             Text("g")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.secondaryText)
                 .frame(width: 36, alignment: .leading)
         }
     }

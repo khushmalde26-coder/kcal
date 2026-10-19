@@ -89,6 +89,7 @@ struct LabelFlow: View {
             } actions: {
                 Button("Try again") { state = .capture }
                     .buttonStyle(.glassProminent)
+                    .foregroundStyle(Theme.onTint)
                 Button("Enter it manually") {
                     state = .review(FoodDraft(barcode: barcode), rows: [])
                 }

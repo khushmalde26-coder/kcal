@@ -23,7 +23,7 @@ struct StaplesView: View {
                                 Text(slot.title)
                                 Text(subtitle(slot))
                                     .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(Theme.secondaryText)
                                     .lineLimit(2)
                             }
                             Spacer()
@@ -42,7 +42,9 @@ struct StaplesView: View {
             } footer: {
                 Text("Scan the milk, bread and other products you buy and your homemade items use their exact values. Until then, a typical UK product is used.")
             }
+            .listRowBackground(Theme.surface)
         }
+        .themedList()
         .navigationTitle("My staples")
         .sheet(item: $picking) { slot in
             FoodPicker(title: "Your \(slot.noun)", slot: slot) { food in

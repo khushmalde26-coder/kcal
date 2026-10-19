@@ -58,7 +58,7 @@ struct PortionView: View {
                         .monospacedDigit()
                         .contentTransition(.numericText(value: portion.kcal))
                     Text("kcal")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.secondaryText)
                     HStack(spacing: 24) {
                         macro("Protein", portion.protein)
                         macro("Carbs", portion.carbs)
@@ -70,6 +70,7 @@ struct PortionView: View {
                 .listRowBackground(Color.clear)
                 .animation(.smooth, value: grams)
             }
+            .listRowBackground(Theme.surface)
 
             Section("Amount") {
                 HStack {
@@ -87,7 +88,7 @@ struct PortionView: View {
                             amount = new == .servings ? 1 : (candidate.servingGrams ?? 100).rounded()
                         }
                     } else {
-                        Text(unitLabel).foregroundStyle(.secondary)
+                        Text(unitLabel).foregroundStyle(Theme.secondaryText)
                     }
                 }
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -101,9 +102,10 @@ struct PortionView: View {
                 if let label = candidate.servingLabel, unit == .servings {
                     Text("1 serving = \(label)")
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.secondaryText)
                 }
             }
+            .listRowBackground(Theme.surface)
 
             if let slot = staplePrompt {
                 Section {
@@ -119,6 +121,7 @@ struct PortionView: View {
                 } footer: {
                     Text("Your coffee, toast and other homemade items will use it. Change it any time in Settings › My staples.")
                 }
+                .listRowBackground(Theme.surface)
             }
 
             Section("Meal") {
@@ -127,7 +130,9 @@ struct PortionView: View {
                 }
                 .pickerStyle(.segmented)
             }
+            .listRowBackground(Theme.surface)
         }
+        .themedList()
         .contentMargins(.bottom, 96, for: .scrollContent)
         .navigationTitle(candidate.name)
         .navigationBarTitleDisplayMode(.inline)
@@ -139,6 +144,7 @@ struct PortionView: View {
                     .padding(.vertical, 6)
             }
             .buttonStyle(.glassProminent)
+            .foregroundStyle(Theme.onTint)
             .disabled(grams <= 0)
             .padding()
         }
@@ -157,7 +163,7 @@ struct PortionView: View {
         VStack(spacing: 2) {
             Text("\(grams, format: .number.precision(.fractionLength(0...1))) g")
                 .font(.headline.monospacedDigit())
-            Text(name).font(.caption).foregroundStyle(.secondary)
+            Text(name).font(.caption).foregroundStyle(Theme.secondaryText)
         }
     }
 

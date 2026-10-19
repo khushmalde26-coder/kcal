@@ -52,6 +52,7 @@ struct ProgressScreen: View {
                             .padding(.vertical, 8)
                     }
                 }
+                .listRowBackground(Theme.surface)
 
                 Section("This week") {
                     row("Trend weight", trend.last.map { "\($0.formatted(.number.precision(.fractionLength(1)))) kg" })
@@ -59,6 +60,7 @@ struct ProgressScreen: View {
                     row("Average intake", averageIntake.map { "\(Int($0.rounded())) kcal" })
                     row("Daily goal", "\(Int(settings.target.kcal)) kcal")
                 }
+                .listRowBackground(Theme.surface)
 
                 if !weights.isEmpty {
                     Section("Weigh-ins") {
@@ -78,8 +80,10 @@ struct ProgressScreen: View {
                             Task { await health.deleteWeight(syncIDs: syncIDs) }
                         }
                     }
+                    .listRowBackground(Theme.surface)
                 }
             }
+            .themedList()
             .navigationTitle("Progress")
             .toolbar {
                 Button("Add weight", systemImage: "plus") { showingAddWeight = true }
@@ -95,7 +99,7 @@ struct ProgressScreen: View {
         Chart {
             ForEach(weights) { entry in
                 PointMark(x: .value("Date", entry.date), y: .value("Weight", entry.kg))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.secondaryText)
                     .symbolSize(20)
             }
             ForEach(Array(zip(weights, trend)), id: \.0.id) { entry, value in
@@ -138,10 +142,11 @@ private struct AddWeightSheet: View {
                     TextField("Weight", value: $kg, format: .number.precision(.fractionLength(1)))
                         .keyboardType(.decimalPad)
                         .font(.title2.monospacedDigit())
-                    Text("kg").foregroundStyle(.secondary)
+                    Text("kg").foregroundStyle(Theme.secondaryText)
                 }
                 DatePicker("Date", selection: $date, in: ...Date.now, displayedComponents: .date)
             }
+            .themedList()
             .navigationTitle("Weigh-in")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

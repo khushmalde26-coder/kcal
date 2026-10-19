@@ -46,6 +46,7 @@ struct RecipeEditor: View {
                     Text("Makes \(Int(servings)) serving\(servings == 1 ? "" : "s")")
                 }
             }
+            .listRowBackground(Theme.surface)
 
             Section {
                 ForEach($drafts) { $draft in
@@ -53,12 +54,12 @@ struct RecipeEditor: View {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             if let slot = draft.slot {
-                                Image(systemName: slot.symbol).foregroundStyle(.secondary)
+                                Image(systemName: slot.symbol).foregroundStyle(Theme.secondaryText)
                             }
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(ingredient?.name ?? "Missing food").lineLimit(2)
                                 if let slot = draft.slot {
-                                    Text("Your \(slot.noun)").font(.caption).foregroundStyle(.secondary)
+                                    Text("Your \(slot.noun)").font(.caption).foregroundStyle(Theme.secondaryText)
                                 }
                             }
                         }
@@ -76,6 +77,7 @@ struct RecipeEditor: View {
                             }
                         }
                     }
+                    .listRowBackground(Theme.surface)
                     Button("Any food…", systemImage: "magnifyingglass") { pickingFood = true }
                 } label: {
                     Label("Add ingredient", systemImage: "plus.circle")
@@ -85,7 +87,9 @@ struct RecipeEditor: View {
             } footer: {
                 Text("Staples follow your default products in Settings › My staples.")
             }
+            .listRowBackground(Theme.surface)
         }
+        .themedList()
         .contentMargins(.bottom, 140, for: .scrollContent)
         .navigationTitle(recipe == nil ? "Build your own" : "Edit")
         .navigationBarTitleDisplayMode(.inline)
@@ -104,6 +108,7 @@ struct RecipeEditor: View {
                         .padding(.vertical, 6)
                 }
                 .buttonStyle(.glassProminent)
+                .foregroundStyle(Theme.onTint)
                 .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || drafts.isEmpty)
             }
             .padding()

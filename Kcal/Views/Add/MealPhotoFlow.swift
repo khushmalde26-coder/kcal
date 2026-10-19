@@ -51,6 +51,7 @@ struct MealPhotoFlow: View {
             } actions: {
                 Button("Try again") { state = .capture }
                     .buttonStyle(.glassProminent)
+                    .foregroundStyle(Theme.onTint)
             }
         }
     }
@@ -79,13 +80,16 @@ struct MealPhotoFlow: View {
             } footer: {
                 Text("Photo estimates can be off by 20% or more, mostly on portion size. Adjust the grams if you know better.")
             }
+            .listRowBackground(Theme.surface)
             Section("Meal") {
                 Picker("Meal", selection: $meal) {
                     ForEach(Meal.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
             }
+            .listRowBackground(Theme.surface)
         }
+        .themedList()
         .contentMargins(.bottom, 96, for: .scrollContent)
         .safeAreaInset(edge: .bottom) {
             Button {
@@ -97,6 +101,7 @@ struct MealPhotoFlow: View {
                     .padding(.vertical, 6)
             }
             .buttonStyle(.glassProminent)
+            .foregroundStyle(Theme.onTint)
             .disabled(items.isEmpty)
             .padding()
         }
