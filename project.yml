@@ -1,7 +1,7 @@
 # Generate Kcal.xcodeproj with XcodeGen: `brew install xcodegen && xcodegen`
 name: Kcal
 options:
-  bundleIdPrefix: com.kcal
+  bundleIdPrefix: com.khushmalde
   deploymentTarget:
     iOS: "26.0"
   createIntermediateGroups: true
@@ -28,7 +28,7 @@ targets:
       - package: KcalCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.kcal.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.khushmalde.kcal
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     info:
       path: Kcal/Info.plist

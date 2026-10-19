@@ -7,4 +7,8 @@ USDA_API_KEY = DEMO_KEY
 // Note: xcconfig treats // as a comment, so write URLs as https:/$()/example.com
 MEAL_PHOTO_ENDPOINT =
 
+// Signing: set your Apple team in Secrets.xcconfig, e.g.
+// DEVELOPMENT_TEAM = ABCDE12345
+// CODE_SIGN_STYLE = Automatic
+
 #include? "Secrets.xcconfig"
