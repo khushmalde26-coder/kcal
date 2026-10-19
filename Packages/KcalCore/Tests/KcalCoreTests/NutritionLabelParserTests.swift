@@ -15,8 +15,15 @@ struct NutritionLabelParserTests {
             "Protein 6.3g 0.9g",
             "Salt 0.107g 0.016g",
         ])
-        #expect(label.per100 == Nutrients(kcal: 539, protein: 6.3, carbs: 57.5, fat: 30.9))
+        #expect(label.per100 == Nutrients(
+            kcal: 539, protein: 6.3, carbs: 57.5, fat: 30.9,
+            sugars: 56.3, saturatedFat: 10.6, salt: 0.107
+        ))
+        #expect(label.per100?.fibre == nil)
         #expect(label.perServing?.kcal == 81)
+        #expect(label.perServing?.sugars == 8.4)
+        #expect(label.perServing?.saturatedFat == 1.6)
+        #expect(label.perServing?.salt == 0.016)
         #expect(label.servingGrams == 15)
         #expect(label.isLiquid == false)
         #expect(label.warnings.isEmpty)
@@ -42,7 +49,10 @@ struct NutritionLabelParserTests {
             "*The % Daily Value tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.",
         ])
         #expect(label.per100 == nil)
-        #expect(label.perServing == Nutrients(kcal: 230, protein: 3, carbs: 37, fat: 8))
+        #expect(label.perServing == Nutrients(
+            kcal: 230, protein: 3, carbs: 37, fat: 8,
+            fibre: 4, sugars: 12, saturatedFat: 1, salt: 0.4
+        ))
         #expect(label.servingGrams == 55)
         let per100 = try #require(label.resolvedPer100)
         #expect(abs(per100.kcal - 418.18) < 0.1)
@@ -85,6 +95,41 @@ struct NutritionLabelParserTests {
         ])
         #expect(label.per100?.kcal == 250)
         #expect(label.per100?.protein == 9)
+    }
+
+    @Test func ukDetailLinesWithFibreAndMonounsaturates() {
+        let label = NutritionLabelParser.parse(lines: [
+            "Per 100g",
+            "Energy 1569kJ 374kcal",
+            "Fat 8.0g",
+            "of which saturates 1.5g",
+            "mono-unsaturates 4.5g",
+            "Carbohydrate 60g",
+            "of which sugars 1.2g",
+            "Fibre 9.0g",
+            "Protein 11g",
+            "Salt 0.01g",
+        ])
+        #expect(label.per100?.saturatedFat == 1.5)
+        #expect(label.per100?.sugars == 1.2)
+        #expect(label.per100?.fibre == 9)
+        #expect(label.per100?.salt == 0.01)
+    }
+
+    @Test func usAddedSugarsDoNotReplaceTotalSugars() throws {
+        let label = NutritionLabelParser.parse(lines: [
+            "Serving size 1 bar (40g)",
+            "Calories 190",
+            "Total Fat 7g 9%",
+            "Sodium 95mg 4%",
+            "Total Carbohydrate 29g 11%",
+            "Total Sugars 12g",
+            "Includes 10g Added Sugars 20%",
+            "Protein 3g",
+        ])
+        #expect(label.perServing?.sugars == 12)
+        let salt = try #require(label.perServing?.salt)
+        #expect(abs(salt - 0.2375) < 0.0001)
     }
 
     @Test func missingFieldsProduceWarnings() {

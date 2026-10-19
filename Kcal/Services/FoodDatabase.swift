@@ -1,9 +1,10 @@
 import Foundation
 import KcalCore
 
-/// Remote food lookups.
+/// Food lookups.
 ///
-/// Open Food Facts covers barcoded products, USDA covers generic foods.
+/// Open Food Facts covers barcoded products. Generic foods come from the bundled UK
+/// CoFID dataset when the device region is the UK, otherwise from USDA.
 /// Both are free but rate limited (OFF search: about 10 requests a minute per IP;
 /// USDA: 1,000 an hour per key, shared by every install). That is fine for
 /// development and a small beta but not for a public launch, see README.
@@ -38,12 +39,35 @@ struct FoodDatabase {
         }
     }
 
-    /// Generic foods first (they are what people usually mean by "banana"),
-    /// then branded products. A failure in one source does not hide the other.
+    static var isUK: Bool { Locale.current.region?.identifier == "GB" }
+
+    /// McCance and Widdowson's CoFID, loaded once on first use (about 2,900 foods).
+    nonisolated static let cofid: CoFIDIndex? = {
+        guard let url = Bundle.main.url(forResource: "cofid", withExtension: "json"),
+              let data = try? Data(contentsOf: url) else { return nil }
+        return try? CoFIDIndex(json: data)
+    }()
+
+    /// Instant, offline generic foods. Empty outside the UK, where USDA is used instead.
+    func localSearch(_ query: String) -> [FoodCandidate] {
+        guard Self.isUK, query.count >= 2 else { return [] }
+        return Self.cofid?.search(query) ?? []
+    }
+
+    /// Remote results: USDA generic foods (outside the UK) first, then branded products.
+    /// In the UK, products sold there are ranked first without dropping the rest.
+    /// A failure in one source does not hide the other.
     func search(_ query: String) async -> [FoodCandidate] {
-        async let generic = try? usda(query)
+        async let generic = Self.isUK ? [] : try? usda(query)
         async let branded = try? openFoodFacts(query)
-        let results = (await generic ?? []) + (await branded ?? [])
+        var products = await branded ?? []
+        if Self.isUK {
+            let sold = products.map { $0.countries.contains("en:united-kingdom") }
+            products = zip(products, sold).enumerated()
+                .sorted { ($0.element.1 ? 0 : 1, $0.offset) < ($1.element.1 ? 0 : 1, $1.offset) }
+                .map(\.element.0)
+        }
+        let results = (await generic ?? []) + products
         var seen = Set<String>()
         return results.filter { seen.insert($0.name.lowercased() + ($0.brand ?? "")).inserted }
     }

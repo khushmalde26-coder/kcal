@@ -91,10 +91,22 @@ struct SettingsView: View {
                         Text("Your goal stays the same every day. Extra activity beyond your usual level adds amber calories you can eat, counted at 75% by default. Kcal also saves the food you log and syncs weigh-ins.")
                     }
                 }
+                Section {
+                    NavigationLink {
+                        MyFoodsView()
+                    } label: {
+                        Label("My foods", systemImage: "fork.knife")
+                    }
+                }
                 GoalForm(profile: $settings.profile)
-                Section("Data sources") {
+                Section {
                     Link("Open Food Facts (ODbL)", destination: URL(string: "https://world.openfoodfacts.org")!)
+                    Link("McCance and Widdowson's CoFID 2021", destination: URL(string: "https://www.gov.uk/government/publications/composition-of-foods-integrated-dataset-cofid")!)
                     Link("USDA FoodData Central", destination: URL(string: "https://fdc.nal.usda.gov")!)
+                } header: {
+                    Text("Data sources")
+                } footer: {
+                    Text("UK generic foods: Public Health England (2021) McCance and Widdowson's Composition of Foods Integrated Dataset. Contains public sector information licensed under the Open Government Licence v3.0.")
                 }
                 Section {
                     Text("Kcal is not medical advice. Talk to a doctor before starting a diet if you are pregnant, under 18, or have a medical condition or a history of eating disorders.")

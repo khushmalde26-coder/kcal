@@ -17,11 +17,16 @@ final class HealthService {
 
     private static let activeEnergy = HKQuantityType(.activeEnergyBurned)
     private static let bodyMass = HKQuantityType(.bodyMass)
-    private static let dietary: [(type: HKQuantityType, unit: HKUnit, suffix: String, value: (LogEntry) -> Double)] = [
-        (HKQuantityType(.dietaryEnergyConsumed), .kilocalorie(), "energy", \.kcal),
-        (HKQuantityType(.dietaryProtein), .gram(), "protein", \.protein),
-        (HKQuantityType(.dietaryCarbohydrates), .gram(), "carbs", \.carbs),
-        (HKQuantityType(.dietaryFatTotal), .gram(), "fat", \.fat),
+    private static let dietary: [(type: HKQuantityType, unit: HKUnit, suffix: String, value: (LogEntry) -> Double?)] = [
+        (HKQuantityType(.dietaryEnergyConsumed), .kilocalorie(), "energy", { $0.kcal }),
+        (HKQuantityType(.dietaryProtein), .gram(), "protein", { $0.protein }),
+        (HKQuantityType(.dietaryCarbohydrates), .gram(), "carbs", { $0.carbs }),
+        (HKQuantityType(.dietaryFatTotal), .gram(), "fat", { $0.fat }),
+        (HKQuantityType(.dietaryFiber), .gram(), "fibre", \.fibre),
+        (HKQuantityType(.dietarySugar), .gram(), "sugars", \.sugars),
+        (HKQuantityType(.dietaryFatSaturated), .gram(), "satfat", \.saturatedFat),
+        // Health stores sodium; labels give salt, which is 2.5 x sodium.
+        (HKQuantityType(.dietarySodium), .gramUnit(with: .milli), "sodium", { $0.salt.map { $0 / 2.5 * 1000 } }),
     ]
 
     init(settings: AppSettings) {
@@ -100,15 +105,16 @@ final class HealthService {
         for entry in entries {
             let id = entry.healthSyncID ?? UUID().uuidString
             for field in Self.dietary where canWrite(field.type) {
+                guard let value = field.value(entry) else { continue }
                 samples.append(HKQuantitySample(
                     type: field.type,
-                    quantity: HKQuantity(unit: field.unit, doubleValue: field.value(entry)),
+                    quantity: HKQuantity(unit: field.unit, doubleValue: value),
                     start: entry.timestamp,
                     end: entry.timestamp,
                     metadata: [
                         // One identifier per nutrient: samples sharing an identifier replace each other.
                         HKMetadataKeySyncIdentifier: "\(id).\(field.suffix)",
-                        HKMetadataKeySyncVersion: 1,
+                        HKMetadataKeySyncVersion: entry.healthSyncVersion,
                         HKMetadataKeyFoodType: entry.name,
                     ]
                 ))
@@ -117,6 +123,17 @@ final class HealthService {
         }
         guard !samples.isEmpty else { return }
         try? await store.save(samples)
+    }
+
+    /// Re-saves an edited entry. Samples with the same sync identifier and a higher
+    /// version replace the old ones; nutrients that are now unknown are removed.
+    func update(_ entry: LogEntry) async {
+        guard isOn, let id = entry.healthSyncID else { return }
+        entry.healthSyncVersion += 1
+        for field in Self.dietary where canWrite(field.type) && field.value(entry) == nil {
+            _ = try? await store.deleteObjects(of: field.type, predicate: Self.syncPredicate(["\(id).\(field.suffix)"]))
+        }
+        await save([entry])
     }
 
     /// Removes the Health samples written for deleted entries. Pass the ids before deleting the models.

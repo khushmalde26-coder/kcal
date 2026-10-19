@@ -6,3 +6,5 @@ DerivedData/
 xcuserdata/
 .DS_Store
 build/
+scripts/.venv/
+scripts/data/

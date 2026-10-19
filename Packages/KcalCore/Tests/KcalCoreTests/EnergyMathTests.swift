@@ -76,6 +76,7 @@ struct FoodDatabaseDecodingTests {
         let json = """
         {"status":1,"product":{"code":"3017624010701","product_name":"Nutella","brands":"Ferrero, Nutella",
         "serving_size":"15 g","serving_quantity":"15","product_quantity_unit":"g",
+        "countries_tags":["en:france","en:united-kingdom"],
         "nutriments":{"energy-kcal_100g":539,"proteins_100g":"6.3","carbohydrates_100g":57.5,"fat_100g":30.9}}}
         """
         let response = try JSONDecoder().decode(OFFProductResponse.self, from: Data(json.utf8))
@@ -83,8 +84,23 @@ struct FoodDatabaseDecodingTests {
         #expect(food.name == "Nutella")
         #expect(food.brand == "Ferrero")
         #expect(food.per100 == Nutrients(kcal: 539, protein: 6.3, carbs: 57.5, fat: 30.9))
+        #expect(food.countries == ["en:france", "en:united-kingdom"])
         #expect(food.servingGrams == 15)
         #expect(food.barcode == "3017624010701")
+    }
+
+    @Test func openFoodFactsDetailNutrientsAndSodiumFallback() throws {
+        let json = """
+        {"status":1,"product":{"code":"5000","product_name":"Oatcakes",
+        "nutriments":{"energy-kcal_100g":450,"fiber_100g":8,"sugars_100g":"2.1",
+        "saturated-fat_100g":4.2,"sodium_100g":0.4}}}
+        """
+        let response = try JSONDecoder().decode(OFFProductResponse.self, from: Data(json.utf8))
+        let food = try #require(response.product?.candidate())
+        #expect(food.per100.fibre == 8)
+        #expect(food.per100.sugars == 2.1)
+        #expect(food.per100.saturatedFat == 4.2)
+        #expect(food.per100.salt == 1.0)
     }
 
     @Test func productWithoutEnergyIsDropped() throws {
@@ -97,12 +113,17 @@ struct FoodDatabaseDecodingTests {
         let json = """
         {"foods":[{"fdcId":1105314,"description":"BANANAS, RAW","foodNutrients":[
         {"nutrientNumber":"958","value":97},{"nutrientNumber":"203","value":0.74},
-        {"nutrientNumber":"205","value":23.0},{"nutrientNumber":"204","value":0.29}]}]}
+        {"nutrientNumber":"205","value":23.0},{"nutrientNumber":"204","value":0.29},
+        {"nutrientNumber":"291","value":2.6},{"nutrientNumber":"269","value":15.8},{"nutrientNumber":"307","value":4}]}]}
         """
         let response = try JSONDecoder().decode(FDCSearchResponse.self, from: Data(json.utf8))
         let food = try #require(response.foods.first?.candidate())
         #expect(food.name == "Bananas, raw")
         #expect(food.per100.kcal == 97)
         #expect(food.source == .usda)
+        #expect(food.per100.fibre == 2.6)
+        #expect(food.per100.sugars == 15.8)
+        #expect(food.per100.saturatedFat == nil)
+        #expect(food.per100.salt == 0.01)
     }
 }

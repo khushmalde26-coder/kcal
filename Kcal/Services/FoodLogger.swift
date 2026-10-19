@@ -32,13 +32,23 @@ extension ModelContext {
     @discardableResult
     func log(_ food: Food, grams: Double, meal: Meal, on date: Date) -> LogEntry {
         food.lastUsedAt = .now
-        // Log at the chosen day but the current time of day, so entries sort naturally.
-        let time = Calendar.current.dateComponents([.hour, .minute, .second], from: .now)
-        let timestamp = Calendar.current.date(
-            bySettingHour: time.hour ?? 12, minute: time.minute ?? 0, second: time.second ?? 0, of: date
-        ) ?? date
-        let entry = LogEntry(food: food, grams: grams, meal: meal, date: timestamp)
+        let entry = LogEntry(food: food, grams: grams, meal: meal, date: Self.logTime(on: date))
         insert(entry)
         return entry
+    }
+
+    @discardableResult
+    func quickAdd(name: String, kcal: Double, meal: Meal, on date: Date) -> LogEntry {
+        let entry = LogEntry(quickAdd: name, kcal: kcal, meal: meal, date: Self.logTime(on: date))
+        insert(entry)
+        return entry
+    }
+
+    /// The chosen day at the current time of day, so entries sort naturally.
+    private static func logTime(on date: Date) -> Date {
+        let time = Calendar.current.dateComponents([.hour, .minute, .second], from: .now)
+        return Calendar.current.date(
+            bySettingHour: time.hour ?? 12, minute: time.minute ?? 0, second: time.second ?? 0, of: date
+        ) ?? date
     }
 }

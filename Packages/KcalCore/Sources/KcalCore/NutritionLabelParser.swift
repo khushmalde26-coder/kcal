@@ -58,6 +58,11 @@ public enum NutritionLabelParser {
         var fat: [Double]?
         var carbs: [Double]?
         var protein: [Double]?
+        var saturates: [Double]?
+        var sugars: [Double]?
+        var fibre: [Double]?
+        var salt: [Double]?
+        var sodium: [Double]?
 
         for line in lines {
             let label = line.drop { !$0.isLetter }
@@ -74,6 +79,16 @@ public enum NutritionLabelParser {
                 carbs = gramValues(in: line)
             } else if protein == nil, label.hasPrefix("protein") {
                 protein = gramValues(in: line)
+            } else if saturates == nil, label.contains("saturate"), !label.contains("unsat") {
+                saturates = gramValues(in: line)
+            } else if sugars == nil, label.contains("sugar"), !label.contains("added"), !label.contains("alcohol") {
+                sugars = gramValues(in: line)
+            } else if fibre == nil, label.contains("fibre") || label.contains("fiber") {
+                fibre = gramValues(in: line)
+            } else if salt == nil, label.hasPrefix("salt") {
+                salt = gramValues(in: line)
+            } else if sodium == nil, label.hasPrefix("sodium") {
+                sodium = sodiumGrams(in: line)
             }
         }
 
@@ -87,7 +102,11 @@ public enum NutritionLabelParser {
                 kcal: energy[i],
                 protein: protein?[safe: i] ?? 0,
                 carbs: carbs?[safe: i] ?? 0,
-                fat: fat?[safe: i] ?? 0
+                fat: fat?[safe: i] ?? 0,
+                fibre: fibre?[safe: i],
+                sugars: sugars?[safe: i],
+                saturatedFat: saturates?[safe: i],
+                salt: salt?[safe: i] ?? sodium?[safe: i].map(Nutrients.salt(fromSodiumGrams:))
             )
         }
 
@@ -208,6 +227,13 @@ public enum NutritionLabelParser {
         line.matches(of: #/(\d+(?:\.\d+)?)\s?(%|mg|mcg|µg|kj|kcal)?/#)
             .filter { $0.2 == nil }
             .compactMap { Double($0.1) }
+    }
+
+    /// US labels give sodium in mg ("Sodium 160mg 7%"), some EU labels in g.
+    private static func sodiumGrams(in line: String) -> [Double] {
+        line.matches(of: #/(\d+(?:\.\d+)?)\s?(mg|g)\b/#).compactMap { match in
+            Double(match.1).map { match.2 == "mg" ? $0 / 1000 : $0 }
+        }
     }
 
     private static func gramValues(in line: String) -> [Double] {

@@ -1,23 +1,51 @@
 import Foundation
 
 /// Energy and macronutrients. Grams for macros, kcal for energy.
+/// Fibre, sugars, saturated fat and salt are optional: nil means the source didn't say,
+/// which is different from zero.
 public struct Nutrients: Codable, Hashable, Sendable {
     public var kcal: Double
     public var protein: Double
     public var carbs: Double
     public var fat: Double
+    public var fibre: Double?
+    public var sugars: Double?
+    public var saturatedFat: Double?
+    public var salt: Double?
 
-    public init(kcal: Double = 0, protein: Double = 0, carbs: Double = 0, fat: Double = 0) {
+    public init(
+        kcal: Double = 0,
+        protein: Double = 0,
+        carbs: Double = 0,
+        fat: Double = 0,
+        fibre: Double? = nil,
+        sugars: Double? = nil,
+        saturatedFat: Double? = nil,
+        salt: Double? = nil
+    ) {
         self.kcal = kcal
         self.protein = protein
         self.carbs = carbs
         self.fat = fat
+        self.fibre = fibre
+        self.sugars = sugars
+        self.saturatedFat = saturatedFat
+        self.salt = salt
     }
 
     public static let zero = Nutrients()
 
     public func scaled(by factor: Double) -> Nutrients {
-        Nutrients(kcal: kcal * factor, protein: protein * factor, carbs: carbs * factor, fat: fat * factor)
+        Nutrients(
+            kcal: kcal * factor, protein: protein * factor, carbs: carbs * factor, fat: fat * factor,
+            fibre: fibre.map { $0 * factor }, sugars: sugars.map { $0 * factor },
+            saturatedFat: saturatedFat.map { $0 * factor }, salt: salt.map { $0 * factor }
+        )
+    }
+
+    /// Salt equivalent of sodium, as UK and EU labels state it.
+    public static func salt(fromSodiumGrams sodium: Double) -> Double {
+        sodium * 2.5
     }
 
     /// Nutrients for `grams` of a food whose values are given per 100 g.
@@ -30,12 +58,20 @@ public struct Nutrients: Codable, Hashable, Sendable {
         protein * 4 + carbs * 4 + fat * 9
     }
 
+    /// Optional nutrients add up when either side has a value; nil only when both are unknown.
     public static func + (lhs: Nutrients, rhs: Nutrients) -> Nutrients {
-        Nutrients(
+        func add(_ a: Double?, _ b: Double?) -> Double? {
+            a == nil && b == nil ? nil : (a ?? 0) + (b ?? 0)
+        }
+        return Nutrients(
             kcal: lhs.kcal + rhs.kcal,
             protein: lhs.protein + rhs.protein,
             carbs: lhs.carbs + rhs.carbs,
-            fat: lhs.fat + rhs.fat
+            fat: lhs.fat + rhs.fat,
+            fibre: add(lhs.fibre, rhs.fibre),
+            sugars: add(lhs.sugars, rhs.sugars),
+            saturatedFat: add(lhs.saturatedFat, rhs.saturatedFat),
+            salt: add(lhs.salt, rhs.salt)
         )
     }
 
@@ -50,6 +86,20 @@ public enum FoodSource: String, Codable, CaseIterable, Sendable {
     case label
     case custom
     case mealPhoto
+    case cofid
+    case quickAdd
+
+    public var label: String {
+        switch self {
+        case .openFoodFacts: "Open Food Facts"
+        case .usda: "USDA FoodData Central"
+        case .label: "Your label scan"
+        case .custom: "Your food"
+        case .mealPhoto: "Meal photo estimate"
+        case .cofid: "McCance and Widdowson's (UK)"
+        case .quickAdd: "Quick add"
+        }
+    }
 }
 
 /// A food found in a remote database or produced by a scan, before it is saved locally.
@@ -63,6 +113,8 @@ public struct FoodCandidate: Identifiable, Hashable, Sendable {
     public var servingLabel: String?
     public var isLiquid: Bool
     public var source: FoodSource
+    /// Open Food Facts country tags, e.g. "en:united-kingdom". Empty for other sources.
+    public var countries: [String]
 
     public init(
         id: String,
@@ -73,7 +125,8 @@ public struct FoodCandidate: Identifiable, Hashable, Sendable {
         servingGrams: Double? = nil,
         servingLabel: String? = nil,
         isLiquid: Bool = false,
-        source: FoodSource
+        source: FoodSource,
+        countries: [String] = []
     ) {
         self.id = id
         self.name = name
@@ -84,5 +137,6 @@ public struct FoodCandidate: Identifiable, Hashable, Sendable {
         self.servingLabel = servingLabel
         self.isLiquid = isLiquid
         self.source = source
+        self.countries = countries
     }
 }

@@ -36,6 +36,10 @@ struct RootView: View {
                 OnboardingView()
             }
         }
+        // Ask for any Health types added since the user connected (iOS only shows new ones).
+        .task {
+            if settings.healthEnabled { _ = await health.connect() }
+        }
         // Pick up weigh-ins from scales and other apps whenever Kcal comes forward.
         .task(id: scenePhase == .active && settings.healthEnabled) {
             guard scenePhase == .active else { return }

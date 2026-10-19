@@ -7,9 +7,12 @@ struct FoodSearchView: View {
     let isSheet: Bool
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
     @Query(sort: \Food.lastUsedAt, order: .reverse) private var savedFoods: [Food]
     @State private var query = ""
+    @State private var local: [FoodCandidate] = []
     @State private var remote: [FoodCandidate] = []
+    @State private var newFood: NewFood?
     @State private var isSearching = false
     @State private var path: [FoodCandidate] = []
     @State private var loggedName: String?
@@ -35,9 +38,22 @@ struct FoodSearchView: View {
                         rows(Array(savedFoods.prefix(30)))
                     }
                 } else {
-                    let local = savedFoods.filter { $0.name.localizedStandardContains(query) }
+                    let saved = savedFoods.filter { $0.name.localizedStandardContains(query) }
+                    if !saved.isEmpty {
+                        Section("Your foods") { rows(saved) }
+                    }
                     if !local.isEmpty {
-                        Section("Your foods") { rows(local) }
+                        Section {
+                            ForEach(local) { candidate in
+                                NavigationLink(value: candidate) {
+                                    FoodRow(name: candidate.name, detail: detail(for: candidate))
+                                }
+                            }
+                        } header: {
+                            Text("UK foods")
+                        } footer: {
+                            Text("McCance and Widdowson's Composition of Foods, UK.")
+                        }
                     }
                     Section {
                         ForEach(remote) { candidate in
@@ -51,7 +67,18 @@ struct FoodSearchView: View {
                             if isSearching { ProgressView().controlSize(.small) }
                         }
                     } footer: {
-                        Text("Generic foods from USDA, packaged products from Open Food Facts.")
+                        Text(FoodDatabase.isUK
+                             ? "Packaged products from Open Food Facts, UK products first."
+                             : "Generic foods from USDA, packaged products from Open Food Facts.")
+                    }
+                    Section {
+                        Button {
+                            newFood = NewFood(name: query.trimmingCharacters(in: .whitespaces))
+                        } label: {
+                            Label("Create “\(query.trimmingCharacters(in: .whitespaces))”", systemImage: "plus.circle")
+                        }
+                    } footer: {
+                        Text("Can't find it? Add it with your own values.")
                     }
                 }
             }
@@ -60,6 +87,7 @@ struct FoodSearchView: View {
             .onSubmit(of: .search) { Task { await searchRemote() } }
             // Remote search waits for a pause in typing; Open Food Facts allows ~10 searches a minute.
             .task(id: query) {
+                local = database.localSearch(query.trimmingCharacters(in: .whitespaces))
                 remote = []
                 guard query.count >= 3 else { return }
                 try? await Task.sleep(for: .seconds(1))
@@ -75,6 +103,24 @@ struct FoodSearchView: View {
                 if isSheet {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Close", systemImage: "xmark") { dismiss() }
+                    }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Create food", systemImage: "plus") { newFood = NewFood(name: "") }
+                }
+            }
+            .sheet(item: $newFood) { new in
+                NavigationStack {
+                    FoodEditor(draft: FoodDraft(name: new.name), saveTitle: "Save and choose portion") { draft in
+                        guard let candidate = draft.candidate(source: .custom) else { return }
+                        context.insert(Food(candidate: candidate))
+                        newFood = nil
+                        path.append(candidate)
+                    }
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel", systemImage: "xmark") { newFood = nil }
+                        }
                     }
                 }
             }
@@ -131,6 +177,11 @@ struct FoodSearchView: View {
             withAnimation(.smooth) { loggedName = nil }
         }
     }
+}
+
+private struct NewFood: Identifiable {
+    let id = UUID()
+    var name: String
 }
 
 struct FoodRow: View {

@@ -16,6 +16,10 @@ final class Food {
     var proteinPer100: Double = 0
     var carbsPer100: Double = 0
     var fatPer100: Double = 0
+    var fibrePer100: Double?
+    var sugarsPer100: Double?
+    var saturatedFatPer100: Double?
+    var saltPer100: Double?
     var servingGrams: Double?
     var servingLabel: String?
     var isLiquid: Bool = false
@@ -27,29 +31,43 @@ final class Food {
     var entries: [LogEntry]? = []
 
     init(candidate: FoodCandidate) {
+        sourceRaw = candidate.source.rawValue
+        remoteID = candidate.id
+        update(from: candidate)
+    }
+
+    /// Copies the editable details; source and id stay as they were.
+    func update(from candidate: FoodCandidate) {
         name = candidate.name
         brand = candidate.brand
         barcode = candidate.barcode
-        sourceRaw = candidate.source.rawValue
-        remoteID = candidate.id
-        kcalPer100 = candidate.per100.kcal
-        proteinPer100 = candidate.per100.protein
-        carbsPer100 = candidate.per100.carbs
-        fatPer100 = candidate.per100.fat
+        per100 = candidate.per100
         servingGrams = candidate.servingGrams
         servingLabel = candidate.servingLabel
         isLiquid = candidate.isLiquid
     }
 
+    /// Foods the user entered themselves, by hand or from a label photo.
+    var isUserCreated: Bool { source == .custom || source == .label }
+
     var source: FoodSource { FoodSource(rawValue: sourceRaw) ?? .custom }
 
     var per100: Nutrients {
-        get { Nutrients(kcal: kcalPer100, protein: proteinPer100, carbs: carbsPer100, fat: fatPer100) }
+        get {
+            Nutrients(
+                kcal: kcalPer100, protein: proteinPer100, carbs: carbsPer100, fat: fatPer100,
+                fibre: fibrePer100, sugars: sugarsPer100, saturatedFat: saturatedFatPer100, salt: saltPer100
+            )
+        }
         set {
             kcalPer100 = newValue.kcal
             proteinPer100 = newValue.protein
             carbsPer100 = newValue.carbs
             fatPer100 = newValue.fat
+            fibrePer100 = newValue.fibre
+            sugarsPer100 = newValue.sugars
+            saturatedFatPer100 = newValue.saturatedFat
+            saltPer100 = newValue.salt
         }
     }
 
@@ -83,22 +101,51 @@ final class LogEntry {
     var protein: Double = 0
     var carbs: Double = 0
     var fat: Double = 0
+    var fibre: Double?
+    var sugars: Double?
+    var saturatedFat: Double?
+    var salt: Double?
     var food: Food?
     /// Base sync identifier of the samples written to Apple Health, if any.
     var healthSyncID: String?
+    /// Bumped when the entry is edited so Health replaces the old samples.
+    var healthSyncVersion: Int = 1
 
     init(food: Food, grams: Double, meal: Meal, date: Date) {
         self.food = food
-        self.grams = grams
         self.mealRaw = meal.rawValue
         self.timestamp = date
         self.day = Calendar.current.startOfDay(for: date)
         self.name = food.name
-        let n = food.per100.forPortion(grams: grams)
-        self.kcal = n.kcal
-        self.protein = n.protein
-        self.carbs = n.carbs
-        self.fat = n.fat
+        setPortion(grams: grams)
+    }
+
+    /// A one-off calorie number with no food behind it.
+    init(quickAdd name: String, kcal: Double, meal: Meal, date: Date) {
+        self.name = name
+        self.mealRaw = meal.rawValue
+        self.timestamp = date
+        self.day = Calendar.current.startOfDay(for: date)
+        self.kcal = kcal
+    }
+
+    var isQuickAdd: Bool { food == nil && grams == 0 }
+
+    /// Changes the amount and recomputes the snapshot from the food, or by scaling
+    /// the old values if the food has since been deleted.
+    func setPortion(grams newGrams: Double) {
+        if let food {
+            nutrients = food.per100.forPortion(grams: newGrams)
+        } else if grams > 0 {
+            nutrients = nutrients.scaled(by: newGrams / grams)
+        }
+        grams = newGrams
+    }
+
+    /// Values per 100 g (or ml) as logged, for traffic lights and the detail view.
+    var per100: Nutrients? {
+        if let food { return food.per100 }
+        return grams > 0 ? nutrients.scaled(by: 100 / grams) : nil
     }
 
     var meal: Meal {
@@ -107,12 +154,21 @@ final class LogEntry {
     }
 
     var nutrients: Nutrients {
-        get { Nutrients(kcal: kcal, protein: protein, carbs: carbs, fat: fat) }
+        get {
+            Nutrients(
+                kcal: kcal, protein: protein, carbs: carbs, fat: fat,
+                fibre: fibre, sugars: sugars, saturatedFat: saturatedFat, salt: salt
+            )
+        }
         set {
             kcal = newValue.kcal
             protein = newValue.protein
             carbs = newValue.carbs
             fat = newValue.fat
+            fibre = newValue.fibre
+            sugars = newValue.sugars
+            saturatedFat = newValue.saturatedFat
+            salt = newValue.salt
         }
     }
 }
