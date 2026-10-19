@@ -13,6 +13,9 @@ struct TodayView: View {
     @Environment(HealthService.self) private var health
     @Environment(\.scenePhase) private var scenePhase
     @State private var day = Calendar.current.startOfDay(for: .now)
+    /// Showing today rather than a day the user navigated to. Kept so that an app left
+    /// open overnight moves on to the new day instead of logging into yesterday.
+    @State private var followsToday = true
     @State private var flow: AddFlow?
 
     var body: some View {
@@ -39,6 +42,12 @@ struct TodayView: View {
                         Button("Next day", systemImage: "chevron.right") { shift(1) }
                             .disabled(Calendar.current.isDateInToday(day))
                     }
+                }
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active { catchUpToToday() }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
+                    catchUpToToday()
                 }
                 .safeAreaInset(edge: .bottom) {
                     QuickAddBar(flow: $flow)
@@ -67,6 +76,12 @@ struct TodayView: View {
         withAnimation(.smooth) {
             day = Calendar.current.date(byAdding: .day, value: days, to: day) ?? day
         }
+        followsToday = Calendar.current.isDateInToday(day)
+    }
+
+    private func catchUpToToday() {
+        let today = Calendar.current.startOfDay(for: .now)
+        if followsToday && day != today { day = today }
     }
 }
 

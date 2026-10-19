@@ -62,6 +62,13 @@ struct EnergyMathTests {
         #expect(target.adjustmentNote != nil)
     }
 
+    @Test func implausibleMeasurementsAreFlagged() {
+        #expect(EnergyProfile().problem == nil)
+        #expect(EnergyProfile(heightCm: 17).problem?.contains("height") == true)
+        #expect(EnergyProfile(weightKg: 0).problem?.contains("weight") == true)
+        #expect(EnergyProfile(weightKg: 750).problem?.contains("weight") == true)
+    }
+
     @Test func trendSmoothsNoise() {
         let trend = EnergyMath.trend([80, 81, 79, 80])
         #expect(trend.first == 80)

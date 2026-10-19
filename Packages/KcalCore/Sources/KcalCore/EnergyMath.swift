@@ -56,6 +56,22 @@ public struct EnergyProfile: Codable, Hashable, Sendable {
     }
 }
 
+extension EnergyProfile {
+    public static let heightRange = 120.0...230.0
+    public static let weightRange = 30.0...400.0
+
+    /// Nil when the profile can produce a sensible target; otherwise what to fix.
+    public var problem: String? {
+        if !Self.heightRange.contains(heightCm) {
+            return "Enter a height between \(Int(Self.heightRange.lowerBound)) and \(Int(Self.heightRange.upperBound)) cm."
+        }
+        if !Self.weightRange.contains(weightKg) {
+            return "Enter a weight between \(Int(Self.weightRange.lowerBound)) and \(Int(Self.weightRange.upperBound)) kg."
+        }
+        return nil
+    }
+}
+
 public struct DailyTarget: Equatable, Sendable {
     public var bmr: Double
     public var maintenance: Double

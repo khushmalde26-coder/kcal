@@ -9,7 +9,7 @@ struct GoalForm: View {
     private var target: DailyTarget { EnergyMath.dailyTarget(profile) }
 
     var body: some View {
-        Section("About you") {
+        Section {
             Picker("Sex", selection: $profile.sex) {
                 ForEach(BiologicalSex.allCases, id: \.self) { Text($0.label).tag($0) }
             }
@@ -19,6 +19,12 @@ struct GoalForm: View {
             measurement("Weight", $profile.weightKg, unit: "kg")
             Picker("Activity", selection: $profile.activity) {
                 ForEach(ActivityLevel.allCases, id: \.self) { Text($0.label).tag($0) }
+            }
+        } header: {
+            Text("About you")
+        } footer: {
+            if let problem = profile.problem {
+                Text(problem).foregroundStyle(Theme.over)
             }
         }
         .listRowBackground(Theme.surface)
@@ -223,6 +229,7 @@ struct OnboardingView: View {
                 }
                 .buttonStyle(.glassProminent)
                 .foregroundStyle(Theme.onTint)
+                .disabled(profile.problem != nil)
                 .padding()
             }
         }
