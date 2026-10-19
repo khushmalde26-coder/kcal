@@ -1,0 +1,10 @@
+// Public defaults. Put real keys in Config/Secrets.xcconfig (gitignored).
+// DEMO_KEY works for development but is limited to about 30 requests an hour per IP.
+// Free key: https://fdc.nal.usda.gov/api-key-signup
+USDA_API_KEY = DEMO_KEY
+
+// Empty disables meal photo logging until the backend exists.
+// Note: xcconfig treats // as a comment, so write URLs as https:/$()/example.com
+MEAL_PHOTO_ENDPOINT =
+
+#include? "Secrets.xcconfig"

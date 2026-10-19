@@ -1,0 +1,8 @@
+*.xcodeproj
+Kcal/Info.plist
+Config/Secrets.xcconfig
+.build/
+DerivedData/
+xcuserdata/
+.DS_Store
+build/
