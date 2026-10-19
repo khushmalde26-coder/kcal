@@ -205,6 +205,13 @@ struct IngredientAmount: View {
     @Binding var draft: IngredientDraft
     let unit: String
     let choices: [PortionChoice]
+    /// Portion-only food: the field edits portions, stored as portion units.
+    var perPortion = false
+
+    private var amount: Binding<Double> {
+        guard perPortion else { return $draft.grams }
+        return Binding { Amount.portions(units: draft.grams) } set: { draft.grams = Amount.units(portions: $0) }
+    }
 
     var body: some View {
         if !choices.isEmpty || draft.isOptional {
@@ -222,11 +229,11 @@ struct IngredientAmount: View {
         HStack {
             Text("Amount")
             Spacer()
-            TextField("Amount", value: $draft.grams, format: .number.precision(.fractionLength(0...1)))
+            TextField("Amount", value: amount, format: .number.precision(.fractionLength(0...2)))
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: 80)
-            Text(unit).foregroundStyle(Theme.secondaryText)
+            Text(perPortion ? "portions" : unit).foregroundStyle(Theme.secondaryText)
         }
     }
 
@@ -234,7 +241,7 @@ struct IngredientAmount: View {
         let selected = abs(draft.grams - grams) < 0.01
         return Button(label) {
             draft.grams = grams
-            draft.unitLabel = grams > 0 ? label : nil
+            draft.unitLabel = grams > 0 && !perPortion ? label : nil
         }
         .buttonStyle(.glass)
         .tint(selected ? .accentColor : nil)

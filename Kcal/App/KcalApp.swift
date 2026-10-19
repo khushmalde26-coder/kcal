@@ -47,6 +47,15 @@ struct RootView: View {
             let today = Calendar.current.startOfDay(for: .now)
             try? context.delete(model: LogEntry.self, where: #Predicate { $0.day == today })
             if kcal > 0 { context.quickAdd(name: "Lunch out", nutrients: Nutrients(kcal: kcal, protein: kcal * 0.05, carbs: kcal * 0.11, fat: kcal * 0.035), meal: .lunch, on: .now) }
+            // KCAL_SEED_PORTION=1.5 also logs a portion-only food (values per portion, no weight).
+            if let portions = ProcessInfo.processInfo.environment["KCAL_SEED_PORTION"].flatMap(Double.init) {
+                let flapjack = context.food(for: FoodCandidate(
+                    id: "custom:seed-flapjack", name: "Mum's flapjack",
+                    per100: Nutrients(kcal: 210, protein: 3, carbs: 28, fat: 9, sugars: 14),
+                    source: .custom, isPerPortion: true
+                ))
+                context.log(flapjack, grams: Amount.units(portions: portions), meal: .snacks, on: .now)
+            }
         }
         #endif
         // Ask for any Health types added since the user connected (iOS only shows new ones).

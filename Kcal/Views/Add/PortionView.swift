@@ -24,17 +24,19 @@ struct PortionView: View {
         self.existing = existing
         self.day = day
         self.onLogged = onLogged
-        let hasServing = (candidate.servingGrams ?? 0) > 0
+        let hasServing = (candidate.servingGrams ?? 0) > 0 || candidate.isPerPortion
         _unit = State(initialValue: hasServing ? .servings : .grams)
         _amount = State(initialValue: hasServing ? 1 : 100)
     }
 
     private var unitLabel: String { candidate.isLiquid ? "ml" : "g" }
 
+    /// The stored amount: grams/ml, or portion units for portion-only foods.
     private var grams: Double {
+        if candidate.isPerPortion { return Amount.units(portions: amount) }
         switch unit {
-        case .grams: amount
-        case .servings: amount * (candidate.servingGrams ?? 100)
+        case .grams: return amount
+        case .servings: return amount * (candidate.servingGrams ?? 100)
         }
     }
 
@@ -77,7 +79,9 @@ struct PortionView: View {
                     TextField("Amount", value: $amount, format: .number.precision(.fractionLength(0...1)))
                         .keyboardType(.decimalPad)
                         .font(.title3.monospacedDigit())
-                    if candidate.servingGrams != nil {
+                    if candidate.isPerPortion {
+                        Text(amount == 1 ? "portion" : "portions").foregroundStyle(Theme.secondaryText)
+                    } else if candidate.servingGrams != nil {
                         Picker("Unit", selection: $unit) {
                             Text(unitLabel).tag(PortionUnit.grams)
                             Text("servings").tag(PortionUnit.servings)
@@ -156,6 +160,7 @@ struct PortionView: View {
 
     private func quickLabel(_ value: Double) -> String {
         let number = value.formatted(.number.precision(.fractionLength(0...1)))
+        if candidate.isPerPortion { return "\(number) portion\(value == 1 ? "" : "s")" }
         return unit == .servings ? "\(number)×" : "\(number) \(unitLabel)"
     }
 

@@ -178,7 +178,7 @@ struct FoodSearchView: View {
     }
 
     private func detail(for c: FoodCandidate) -> String {
-        [c.brand, "\(Int(c.per100.kcal.rounded())) kcal per 100 \(c.isLiquid ? "ml" : "g")"]
+        [c.brand, "\(Int(c.per100.kcal.rounded())) kcal \(c.basisLabel)"]
             .compactMap { $0 }.joined(separator: " · ")
     }
 

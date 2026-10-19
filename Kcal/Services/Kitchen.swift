@@ -27,8 +27,10 @@ struct ResolvedIngredient: Identifiable {
     var unitLabel: String?
     var isLiquid: Bool
     var slot: StapleSlot?
+    /// Portion-only food: `grams` holds portion units (see `Amount`).
+    var isPerPortion = false
 
-    var unit: String { isLiquid ? "ml" : "g" }
+    var unit: String { isPerPortion ? "portion" : (isLiquid ? "ml" : "g") }
     var portion: Nutrients { per100.forPortion(grams: grams) }
 
     /// "Semi-skimmed milk · 30 ml (splash)"
@@ -38,9 +40,8 @@ struct ResolvedIngredient: Identifiable {
 
     /// "30 ml (splash)"
     func amountText(scale: Double = 1) -> String {
-        let amount = (grams * scale).formatted(.number.precision(.fractionLength(0...1)))
         let label = unitLabel.map { " (\($0.lowercased()))" } ?? ""
-        return "\(amount) \(unit)\(label)"
+        return Amount.text(grams * scale, isPerPortion: isPerPortion, isLiquid: isLiquid) + (isPerPortion ? "" : label)
     }
 }
 
@@ -81,12 +82,22 @@ struct IngredientDraft: Identifiable {
         guard let candidate else { return nil }
         return ResolvedIngredient(
             name: candidate.name, per100: candidate.per100, grams: grams, unitLabel: unitLabel,
-            isLiquid: candidate.isLiquid || (slot?.isLiquid ?? false), slot: slot
+            isLiquid: candidate.isLiquid || (slot?.isLiquid ?? false), slot: slot,
+            isPerPortion: candidate.isPerPortion
         )
     }
 
-    /// Chips for this ingredient: the template's, else the slot's.
+    static let portionChoices = [
+        PortionChoice("½ portion", Amount.units(portions: 0.5)),
+        PortionChoice("1 portion", Amount.units(portions: 1)),
+        PortionChoice("2 portions", Amount.units(portions: 2)),
+    ]
+
+    /// Chips for this ingredient: portions for portion-only foods, else the template's,
+    /// else the slot's.
     func choices(with staples: StapleBook) -> [PortionChoice] {
+        let chosen = slot.flatMap { staples.food(for: $0) } ?? food
+        if chosen?.isPerPortion == true { return Self.portionChoices }
         if !portions.isEmpty { return portions }
         guard let slot else { return [] }
         return slot.portions(servingGrams: staples.food(for: slot)?.servingGrams)

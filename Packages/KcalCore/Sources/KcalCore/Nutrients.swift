@@ -102,6 +102,28 @@ public enum FoodSource: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// Amounts are stored in grams (or ml). Portion-only foods, entered from a label or by
+/// hand without a weight, have no grams: their values are per 1 portion and their
+/// amounts are counted in portions, stored as 100 units per portion so the same
+/// "per 100" maths works for both.
+public enum Amount {
+    public static let unitsPerPortion = 100.0
+
+    /// Stored amount for a number of portions of a portion-only food.
+    public static func units(portions: Double) -> Double { portions * unitsPerPortion }
+
+    public static func portions(units: Double) -> Double { units / unitsPerPortion }
+
+    /// "250 g", "200 ml", "1 portion", "1.5 portions".
+    public static func text(_ amount: Double, isPerPortion: Bool, isLiquid: Bool) -> String {
+        if isPerPortion {
+            let n = portions(units: amount)
+            return "\(n.formatted(.number.precision(.fractionLength(0...2)))) portion\(n == 1 ? "" : "s")"
+        }
+        return "\(amount.formatted(.number.precision(.fractionLength(0...1)))) \(isLiquid ? "ml" : "g")"
+    }
+}
+
 /// A food found in a remote database or produced by a scan, before it is saved locally.
 public struct FoodCandidate: Identifiable, Hashable, Sendable {
     public var id: String
@@ -115,6 +137,17 @@ public struct FoodCandidate: Identifiable, Hashable, Sendable {
     public var source: FoodSource
     /// Open Food Facts country tags, e.g. "en:united-kingdom". Empty for other sources.
     public var countries: [String]
+    /// Values are per 1 portion (no weight known), not per 100 g. See `Amount`.
+    public var isPerPortion: Bool
+
+    /// "g", "ml" or "portion".
+    public var unit: String { isPerPortion ? "portion" : (isLiquid ? "ml" : "g") }
+    /// "per 100 g", "per 100 ml" or "per portion".
+    public var basisLabel: String { isPerPortion ? "per portion" : "per 100 \(unit)" }
+
+    public func amountText(_ amount: Double) -> String {
+        Amount.text(amount, isPerPortion: isPerPortion, isLiquid: isLiquid)
+    }
 
     public init(
         id: String,
@@ -126,7 +159,8 @@ public struct FoodCandidate: Identifiable, Hashable, Sendable {
         servingLabel: String? = nil,
         isLiquid: Bool = false,
         source: FoodSource,
-        countries: [String] = []
+        countries: [String] = [],
+        isPerPortion: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -138,5 +172,6 @@ public struct FoodCandidate: Identifiable, Hashable, Sendable {
         self.isLiquid = isLiquid
         self.source = source
         self.countries = countries
+        self.isPerPortion = isPerPortion
     }
 }

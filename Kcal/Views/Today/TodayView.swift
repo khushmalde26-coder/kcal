@@ -152,7 +152,7 @@ private struct EntryRow: View {
     private var subtitle: String {
         if entry.isQuickAdd { return "Calories only" }
         if !entry.ingredientNotes.isEmpty { return "Homemade" }
-        return "\(Int(entry.grams.rounded())) \(entry.food?.unit ?? "g")"
+        return entry.amountText
     }
 
     var body: some View {

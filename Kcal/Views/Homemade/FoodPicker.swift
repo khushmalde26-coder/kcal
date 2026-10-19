@@ -83,7 +83,7 @@ struct PickConfirmView: View {
                 .listRowBackground(Color.clear)
             }
             .listRowBackground(Theme.surface)
-            Section("Per 100 \(candidate.isLiquid ? "ml" : "g")") {
+            Section(candidate.isPerPortion ? "Per portion" : "Per 100 \(candidate.unit)") {
                 row("Calories", candidate.per100.kcal, "kcal")
                 row("Protein", candidate.per100.protein, "g")
                 row("Carbs", candidate.per100.carbs, "g")

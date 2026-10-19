@@ -2,7 +2,8 @@ import Foundation
 import SwiftData
 import KcalCore
 
-/// A food the user has logged or saved. Values are stored per 100 g (or ml).
+/// A food the user has logged or saved. Values are stored per 100 g (or ml), or per
+/// portion for portion-only foods (`isPerPortion`, see `Amount` in KcalCore).
 /// Every property has a default so the store can move to CloudKit sync later.
 @Model
 final class Food {
@@ -23,6 +24,8 @@ final class Food {
     var servingGrams: Double?
     var servingLabel: String?
     var isLiquid: Bool = false
+    /// Values are per 1 portion, entered without a weight. Amounts count portions.
+    var isPerPortion: Bool = false
     var isFavorite: Bool = false
     var createdAt: Date = Date.now
     var lastUsedAt: Date = Date.now
@@ -49,6 +52,7 @@ final class Food {
         servingGrams = candidate.servingGrams
         servingLabel = candidate.servingLabel
         isLiquid = candidate.isLiquid
+        isPerPortion = candidate.isPerPortion
     }
 
     /// Foods the user entered themselves, by hand or from a label photo.
@@ -75,10 +79,10 @@ final class Food {
         }
     }
 
-    var unit: String { isLiquid ? "ml" : "g" }
+    var unit: String { candidate.unit }
 
     var subtitle: String {
-        [brand, "\(Int(kcalPer100.rounded())) kcal per 100 \(unit)"].compactMap { $0 }.joined(separator: " · ")
+        [brand, "\(Int(kcalPer100.rounded())) kcal \(candidate.basisLabel)"].compactMap { $0 }.joined(separator: " · ")
     }
 
     var candidate: FoodCandidate {
@@ -86,7 +90,7 @@ final class Food {
             id: remoteID ?? "local:\(persistentModelID.hashValue)",
             name: name, brand: brand, barcode: barcode, per100: per100,
             servingGrams: servingGrams, servingLabel: servingLabel,
-            isLiquid: isLiquid, source: source
+            isLiquid: isLiquid, source: source, isPerPortion: isPerPortion
         )
     }
 }
@@ -163,7 +167,14 @@ final class LogEntry {
         grams = newGrams
     }
 
-    /// Values per 100 g (or ml) as logged, for traffic lights and the detail view.
+    /// "250 g" or "1.5 portions".
+    var amountText: String {
+        Amount.text(grams, isPerPortion: food?.isPerPortion ?? false, isLiquid: food?.isLiquid ?? false)
+    }
+
+    var isPerPortion: Bool { food?.isPerPortion ?? false }
+
+    /// Values per 100 g (or ml), or per portion for portion-only foods, as logged.
     var per100: Nutrients? {
         if let food { return food.per100 }
         return grams > 0 ? nutrients.scaled(by: 100 / grams) : nil

@@ -264,7 +264,7 @@ public enum NutritionLabelParser {
             warnings.append("Couldn't read \(missing.joined(separator: ", ")). Fill in what's missing.")
         }
         if label.per100 == nil, label.perServing != nil, label.servingGrams == nil {
-            warnings.append("Couldn't find the serving size in grams.")
+            warnings.append("Couldn't find the serving size in grams. Add it if you know it, otherwise the values are saved per portion.")
         }
         if let per100 = label.resolvedPer100 {
             if per100.kcal > 900 {

@@ -26,6 +26,16 @@ struct EntryDetailView: View {
 
     private var unit: String { entry.food?.unit ?? "g" }
     private var isLiquid: Bool { entry.food?.isLiquid ?? false }
+    /// Portion-only foods: amounts in portions, no per-100 g values or traffic lights.
+    private var isPerPortion: Bool { entry.isPerPortion }
+    /// Per-100 values for traffic lights, which don't apply to portion-only foods.
+    private var per100ForLights: Nutrients? { isPerPortion ? nil : entry.per100 }
+
+    /// The amount field: portions for portion-only foods, otherwise grams/ml.
+    private var amountBinding: Binding<Double> {
+        guard isPerPortion else { return $grams }
+        return Binding { Amount.portions(units: grams) } set: { grams = Amount.units(portions: $0) }
+    }
 
     /// What the entry will be after the edits on screen, without changing it yet.
     private var portion: Nutrients {
@@ -53,7 +63,7 @@ struct EntryDetailView: View {
                             .font(.system(size: 56, weight: .bold, design: .rounded))
                             .monospacedDigit()
                             .contentTransition(.numericText(value: portion.kcal))
-                        Text(entry.isQuickAdd || !entry.ingredientNotes.isEmpty ? "kcal" : "kcal in \(grams.formatted(.number.precision(.fractionLength(0...1)))) \(unit)")
+                        Text(entry.isQuickAdd || !entry.ingredientNotes.isEmpty ? "kcal" : "kcal in \(Amount.text(grams, isPerPortion: isPerPortion, isLiquid: isLiquid))")
                             .foregroundStyle(Theme.secondaryText)
                     }
                     .frame(maxWidth: .infinity)
@@ -85,19 +95,21 @@ struct EntryDetailView: View {
                     .listRowBackground(Theme.surface)
 
                     Section {
-                        detailRow("Fibre", portion.fibre, per100: entry.per100?.fibre, light: nil)
-                        detailRow("Sugars", portion.sugars, per100: entry.per100?.sugars, light: .sugars)
-                        detailRow("Saturates", portion.saturatedFat, per100: entry.per100?.saturatedFat, light: .saturatedFat)
-                        detailRow("Salt", portion.salt, per100: entry.per100?.salt, light: .salt)
+                        detailRow("Fibre", portion.fibre, per100: per100ForLights?.fibre, light: nil)
+                        detailRow("Sugars", portion.sugars, per100: per100ForLights?.sugars, light: .sugars)
+                        detailRow("Saturates", portion.saturatedFat, per100: per100ForLights?.saturatedFat, light: .saturatedFat)
+                        detailRow("Salt", portion.salt, per100: per100ForLights?.salt, light: .salt)
                     } header: {
                         Text("Detail")
                     } footer: {
-                        Text("Colours follow UK front-of-pack guidance per 100 \(unit): green low, amber medium, red high.")
+                        if !isPerPortion {
+                            Text("Colours follow UK front-of-pack guidance per 100 \(unit): green low, amber medium, red high.")
+                        }
                     }
                     .listRowBackground(Theme.surface)
 
                     if let per100 = entry.per100 {
-                        Section("Per 100 \(unit)") {
+                        Section(isPerPortion ? "Per portion" : "Per 100 \(unit)") {
                             value("Calories", per100.kcal, unit: "kcal")
                             value("Protein", per100.protein, unit: "g")
                             value("Carbs", per100.carbs, unit: "g")
@@ -111,7 +123,7 @@ struct EntryDetailView: View {
                     if entry.isQuickAdd {
                         editableNumber("Calories", $quickKcal, unit: "kcal")
                     } else {
-                        editableNumber("Amount", $grams, unit: unit)
+                        editableNumber("Amount", amountBinding, unit: isPerPortion ? "portions" : unit)
                     }
                     Picker("Meal", selection: $meal) {
                         ForEach(Meal.allCases) { Label($0.title, systemImage: $0.symbol).tag($0) }
@@ -209,11 +221,13 @@ struct EntryDetailView: View {
         HStack {
             // Rows without a rating keep the dot's space so the names line up.
             let rating = light.flatMap { light in per100.map { TrafficLight.rating(light, per100: $0, isLiquid: isLiquid) } }
-            Circle()
-                .fill(rating?.color ?? .clear)
-                .frame(width: 10, height: 10)
-                .accessibilityLabel(rating?.rawValue ?? "")
-                .accessibilityHidden(rating == nil)
+            if !isPerPortion {
+                Circle()
+                    .fill(rating?.color ?? .clear)
+                    .frame(width: 10, height: 10)
+                    .accessibilityLabel(rating?.rawValue ?? "")
+                    .accessibilityHidden(rating == nil)
+            }
             Text(name)
             Spacer()
             if let amount {

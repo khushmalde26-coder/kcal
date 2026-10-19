@@ -73,7 +73,8 @@ struct RecipeLogView: View {
                                 .controlSize(.small)
                         }
                         if editing {
-                            IngredientAmount(draft: $draft, unit: ingredient?.unit ?? "g", choices: draft.choices(with: staples))
+                            IngredientAmount(draft: $draft, unit: ingredient?.unit ?? "g", choices: draft.choices(with: staples),
+                                     perPortion: ingredient?.isPerPortion ?? false)
                         }
                     }
                 }
@@ -126,6 +127,10 @@ struct RecipeLogView: View {
                 if let index = drafts.firstIndex(where: { $0.id == target.id }) {
                     drafts[index].slot = nil
                     drafts[index].food = food
+                    if food.isPerPortion {
+                        drafts[index].grams = Amount.units(portions: 1)
+                        drafts[index].unitLabel = nil
+                    }
                 }
                 swapping = nil
             }

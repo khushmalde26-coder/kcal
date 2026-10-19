@@ -60,7 +60,8 @@ struct TemplateSetupView: View {
                     } else if let ingredient {
                         Text(ingredient.name)
                     }
-                    IngredientAmount(draft: $draft, unit: ingredient?.unit ?? "g", choices: draft.choices(with: staples))
+                    IngredientAmount(draft: $draft, unit: ingredient?.unit ?? "g", choices: draft.choices(with: staples),
+                                     perPortion: ingredient?.isPerPortion ?? false)
                 } header: {
                     Text(draft.question ?? "")
                 }
@@ -104,6 +105,12 @@ struct TemplateSetupView: View {
         .sheet(item: $picking) { slot in
             FoodPicker(title: "Your \(slot.noun)", slot: slot) { food in
                 context.setStaple(slot, food: food)
+                if food.isPerPortion {
+                    for index in drafts.indices where drafts[index].slot == slot && drafts[index].grams > 0 {
+                        drafts[index].grams = Amount.units(portions: 1)
+                        drafts[index].unitLabel = nil
+                    }
+                }
                 picking = nil
             }
         }

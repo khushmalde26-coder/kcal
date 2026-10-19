@@ -63,7 +63,8 @@ struct RecipeEditor: View {
                                 }
                             }
                         }
-                        IngredientAmount(draft: $draft, unit: ingredient?.unit ?? "g", choices: draft.choices(with: staples))
+                        IngredientAmount(draft: $draft, unit: ingredient?.unit ?? "g", choices: draft.choices(with: staples),
+                                     perPortion: ingredient?.isPerPortion ?? false)
                     }
                 }
                 .onDelete { drafts.remove(atOffsets: $0) }
@@ -115,7 +116,9 @@ struct RecipeEditor: View {
         }
         .sheet(isPresented: $pickingFood) {
             FoodPicker(title: "Add a food") { food in
-                drafts.append(IngredientDraft(food: food, grams: food.servingGrams ?? 100, unitLabel: food.servingLabel))
+                drafts.append(food.isPerPortion
+                    ? IngredientDraft(food: food, grams: Amount.units(portions: 1))
+                    : IngredientDraft(food: food, grams: food.servingGrams ?? 100, unitLabel: food.servingLabel))
                 pickingFood = false
             }
         }

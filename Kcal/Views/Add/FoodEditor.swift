@@ -2,7 +2,8 @@ import SwiftUI
 import KcalCore
 
 /// Editable food details, from a label scan, a blank form or an existing food.
-/// Values are in the chosen basis (per 100 g/ml or per serving).
+/// Values are in the chosen basis (per 100 g/ml or per serving). Per-serving values
+/// with a serving weight are saved per 100 g; without one, the food is saved per portion.
 struct FoodDraft {
     enum Basis: String, CaseIterable { case per100 = "Per 100 g", perServing = "Per serving" }
 
@@ -40,25 +41,31 @@ struct FoodDraft {
         values = food.per100
         servingGrams = food.servingGrams
         isLiquid = food.isLiquid
+        if food.isPerPortion { basis = .perServing }
     }
 
     var unit: String { isLiquid ? "ml" : "g" }
 
-    var per100: Nutrients? {
+    private var weight: Double? { servingGrams.flatMap { $0 > 0 ? $0 : nil } }
+
+    /// Per serving with no weight: keep the values per portion, don't invent per 100 g.
+    var isPerPortion: Bool { basis == .perServing && weight == nil }
+
+    /// Values as stored: per 100 g/ml, or per portion when `isPerPortion`.
+    var stored: Nutrients {
         switch basis {
         case .per100: values
-        case .perServing:
-            servingGrams.flatMap { $0 > 0 ? values.scaled(by: 100 / $0) : nil }
+        case .perServing: weight.map { values.scaled(by: 100 / $0) } ?? values
         }
     }
 
     var isValid: Bool {
-        !name.trimmingCharacters(in: .whitespaces).isEmpty && per100 != nil && values.kcal > 0
+        !name.trimmingCharacters(in: .whitespaces).isEmpty && values.kcal > 0
     }
 
     /// A new food candidate, or nil while the form is incomplete.
     func candidate(source: FoodSource, id: String? = nil) -> FoodCandidate? {
-        guard isValid, let per100 else { return nil }
+        guard isValid else { return nil }
         let brand = brand.trimmingCharacters(in: .whitespaces)
         let barcode = barcode.trimmingCharacters(in: .whitespaces)
         return FoodCandidate(
@@ -66,11 +73,12 @@ struct FoodDraft {
             name: name.trimmingCharacters(in: .whitespaces),
             brand: brand.isEmpty ? nil : brand,
             barcode: barcode.isEmpty ? nil : barcode,
-            per100: per100,
-            servingGrams: servingGrams.flatMap { $0 > 0 ? $0 : nil },
-            servingLabel: servingGrams.flatMap { $0 > 0 ? "\($0.formatted()) \(unit)" : nil },
+            per100: stored,
+            servingGrams: weight,
+            servingLabel: weight.map { "\($0.formatted()) \(unit)" },
             isLiquid: isLiquid,
-            source: source
+            source: source,
+            isPerPortion: isPerPortion
         )
     }
 }
@@ -134,15 +142,17 @@ struct FoodEditor: View {
 
             Section {
                 HStack {
-                    TextField("Optional", value: $draft.servingGrams, format: .number)
+                    TextField("Weight of one serving", value: $draft.servingGrams, format: .number)
                         .keyboardType(.decimalPad)
                     Text(draft.unit).foregroundStyle(Theme.secondaryText)
                 }
             } header: {
-                Text("Serving size")
+                Text("Serving size (optional)")
             } footer: {
-                if draft.basis == .perServing && (draft.servingGrams ?? 0) <= 0 {
-                    Text("Needed to work out values per 100 \(draft.unit).")
+                if draft.isPerPortion {
+                    Text("No weight, so this is saved per portion and logged in portions. Add the weight if you'd like to log it in \(draft.unit).")
+                } else if draft.basis == .perServing {
+                    Text("Values are worked out per 100 \(draft.unit) from this weight.")
                 }
             }
             .listRowBackground(Theme.surface)
