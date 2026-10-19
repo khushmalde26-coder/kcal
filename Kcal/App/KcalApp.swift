@@ -76,7 +76,7 @@ struct MainTabs: View {
             Tab("Today", systemImage: "flame.fill") {
                 TodayView()
             }
-            Tab("Progress", systemImage: "chart.line.downtrend.xyaxis") {
+            Tab("Progress", systemImage: "chart.line.uptrend.xyaxis") {
                 ProgressScreen()
             }
             Tab("Settings", systemImage: "gearshape") {
