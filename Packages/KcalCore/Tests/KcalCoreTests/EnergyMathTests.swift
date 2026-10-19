@@ -23,34 +23,43 @@ struct EnergyMathTests {
         #expect(target.adjustmentNote != nil)
     }
 
-    @Test func noActiveEnergyKeepsMultiplierTarget() {
+    @Test func noActivityEarnsNothing() {
         let profile = EnergyProfile(sex: .female, age: 30, heightCm: 170, weightKg: 75, activity: .light, weeklyLossKg: 0.5)
-        let target = EnergyMath.dailyTarget(profile, activeEnergyKcal: nil, activeCredit: 0.5)
+        let target = EnergyMath.dailyTarget(profile, activeEnergyKcal: nil, activeCredit: 1)
         #expect(target == EnergyMath.dailyTarget(profile))
-        #expect(target.kcal == 1510)
-        #expect(target.activityKcal == nil)
+        #expect(target.baseKcal == 1510)
+        #expect(target.earnedKcal == 0)
+        #expect(target.totalKcal == 1510)
     }
 
-    @Test func activeEnergyIsCreditedOnTopOfRestingPlusFood() {
-        // BMR 1880, so resting plus food is 2068 and the 0.5 kg deficit leaves about 1518.
-        let profile = EnergyProfile(sex: .male, age: 30, heightCm: 180, weightKg: 90, activity: .veryActive, weeklyLossKg: 0.5)
-        let rest = EnergyMath.dailyTarget(profile, activeEnergyKcal: 0, activeCredit: 0.75)
-        let active = EnergyMath.dailyTarget(profile, activeEnergyKcal: 400, activeCredit: 0.75)
-        #expect(abs(rest.maintenance - 2068) < 0.01)
-        #expect(rest.kcal == 1520)
-        #expect(active.activityKcal == 300)
-        #expect(abs(active.maintenance - rest.maintenance - 300) < 0.01)
-        #expect(active.kcal - rest.kcal == 300)
-        #expect(active.adjustmentNote == nil)
-    }
-
-    @Test func floorStillAppliesWithActiveEnergy() {
-        // 1501.5 x 1.1 minus a 550 kcal deficit is about 1102, below the 1200 floor.
+    @Test func lowActivityDayKeepsBaseAndEarnsNothing() {
+        // Light activity assumes 1501.5 x 0.275, about 413 kcal of movement.
         let profile = EnergyProfile(sex: .female, age: 30, heightCm: 170, weightKg: 75, activity: .light, weeklyLossKg: 0.5)
-        let target = EnergyMath.dailyTarget(profile, activeEnergyKcal: 0, activeCredit: 0.75)
-        #expect(target.kcal == 1200)
+        for active in [0.0, 200, 550] {
+            let target = EnergyMath.dailyTarget(profile, activeEnergyKcal: active, activeCredit: 0.75)
+            #expect(target.baseKcal == 1510)
+            #expect(target.earnedKcal == 0)
+            #expect(target.totalKcal == 1510)
+        }
+    }
+
+    @Test func bigActivityDayEarnsTheExcess() {
+        let profile = EnergyProfile(sex: .female, age: 30, heightCm: 170, weightKg: 75, activity: .light, weeklyLossKg: 0.5)
+        let target = EnergyMath.dailyTarget(profile, activeEnergyKcal: 1000, activeCredit: 0.75)
+        // 750 credited minus about 412.9 already assumed by the light activity level.
+        #expect(abs(target.earnedKcal - 337.09) < 0.01)
+        #expect(target.baseKcal == 1510)
+        #expect(abs(target.totalKcal - 1847.09) < 0.01)
+        #expect(target.macros == EnergyMath.dailyTarget(profile).macros)
+    }
+
+    @Test func earnedIsAddedOnTopOfTheFloor() {
+        let profile = EnergyProfile(sex: .female, age: 50, heightCm: 155, weightKg: 55, activity: .sedentary, weeklyLossKg: 1.0)
+        let target = EnergyMath.dailyTarget(profile, activeEnergyKcal: 400, activeCredit: 1)
+        // Sedentary assumes 1107.75 x 0.1, about 110.8 kcal.
+        #expect(target.baseKcal == 1200)
+        #expect(abs(target.earnedKcal - 289.225) < 0.01)
         #expect(target.adjustmentNote != nil)
-        #expect(target.plannedWeeklyLossKg < 0.5)
     }
 
     @Test func trendSmoothsNoise() {

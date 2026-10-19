@@ -28,14 +28,14 @@ final class AppSettings {
         didSet { defaults.set(activeCredit, forKey: Self.creditKey) }
     }
 
-    /// Target from the activity level. With Health on, use `target(activeEnergyKcal:)`.
+    /// Target from the activity level, the same every day.
     var target: DailyTarget { EnergyMath.dailyTarget(profile) }
 
-    /// Today's budget: with Health on, resting plus food plus credited activity.
-    /// Nil active energy (not loaded yet) counts as none.
+    /// The day's target plus calories earned by activity beyond the usual level.
+    /// Without Health, or before active energy has loaded, nothing is earned.
     func target(activeEnergyKcal: Double?) -> DailyTarget {
-        guard healthEnabled else { return target }
-        return EnergyMath.dailyTarget(profile, activeEnergyKcal: activeEnergyKcal ?? 0, activeCredit: activeCredit)
+        guard healthEnabled, let activeEnergyKcal else { return target }
+        return EnergyMath.dailyTarget(profile, activeEnergyKcal: activeEnergyKcal, activeCredit: activeCredit)
     }
 
     init(defaults: UserDefaults = .standard) {

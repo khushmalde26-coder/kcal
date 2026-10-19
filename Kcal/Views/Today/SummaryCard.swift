@@ -1,18 +1,25 @@
 import SwiftUI
 import KcalCore
 
+extension Color {
+    /// Calories earned by activity beyond the usual level.
+    static let earned = Color(red: 1.0, green: 0.62, blue: 0.0)
+}
+
 /// Calories remaining as a ring, macros as bars underneath.
+/// The ring is the day's goal plus anything earned by activity, which shows in amber.
 struct SummaryCard: View {
     let eaten: Nutrients
     let target: DailyTarget
+    /// Apple Health is on, so the Activity stat is shown even before anything is earned.
+    var showsActivity = false
 
-    private var remaining: Double { target.kcal - eaten.kcal }
-    private var progress: Double { target.kcal > 0 ? eaten.kcal / target.kcal : 0 }
+    private var remaining: Double { target.totalKcal - eaten.kcal }
 
     var body: some View {
         VStack(spacing: 20) {
             ZStack {
-                CalorieRing(progress: progress)
+                CalorieRing(eaten: eaten.kcal, base: target.baseKcal, earned: target.earnedKcal)
                     .frame(width: 190, height: 190)
                 VStack(spacing: 2) {
                     Text(abs(remaining), format: .number.precision(.fractionLength(0)))
@@ -21,7 +28,13 @@ struct SummaryCard: View {
                         .contentTransition(.numericText(value: remaining))
                     Text(remaining >= 0 ? "kcal left" : "kcal over")
                         .font(.subheadline)
-                        .foregroundStyle(remaining >= 0 ? Color.secondary : Color.orange)
+                        .foregroundStyle(remaining >= 0 ? Color.secondary : Color.red)
+                    if target.earnedKcal >= 1 {
+                        Text("incl. +\(Int(target.earnedKcal.rounded())) from activity")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(Color.earned)
+                            .transition(.opacity)
+                    }
                 }
             }
             .accessibilityElement(children: .combine)
@@ -35,11 +48,11 @@ struct SummaryCard: View {
             HStack {
                 stat("Eaten", eaten.kcal)
                 Divider().frame(height: 28)
-                if let activity = target.activityKcal {
-                    stat("Activity", activity, sign: "+")
+                stat("Goal", target.baseKcal)
+                if showsActivity {
                     Divider().frame(height: 28)
+                    stat("Activity", target.earnedKcal, sign: "+", tint: .earned)
                 }
-                stat("Goal", target.kcal)
             }
         }
         .padding(24)
@@ -50,10 +63,11 @@ struct SummaryCard: View {
         .animation(.smooth, value: target)
     }
 
-    private func stat(_ title: String, _ value: Double, sign: String = "") -> some View {
+    private func stat(_ title: String, _ value: Double, sign: String = "", tint: Color = .primary) -> some View {
         VStack(spacing: 2) {
             Text(sign + value.formatted(.number.precision(.fractionLength(0))))
                 .font(.headline.monospacedDigit())
+                .foregroundStyle(tint)
                 .contentTransition(.numericText(value: value))
             Text(title)
                 .font(.caption)
@@ -63,28 +77,41 @@ struct SummaryCard: View {
     }
 }
 
+/// One full turn is goal plus earned. The track is grey for the goal and faint amber
+/// for the earned room at the end; the fill is green through the goal, amber through
+/// the earned part, and red for anything beyond both.
 struct CalorieRing: View {
-    let progress: Double
+    let eaten: Double
+    let base: Double
+    let earned: Double
     private let lineWidth: CGFloat = 18
+
+    private var total: Double { max(base + earned, 1) }
+    private var baseEnd: Double { min(base / total, 1) }
+    private var eatenFraction: Double { eaten / total }
 
     var body: some View {
         ZStack {
-            Circle()
-                .stroke(.quaternary, lineWidth: lineWidth)
-            Circle()
-                .trim(from: 0, to: min(progress, 1))
-                .stroke(
-                    AngularGradient(colors: [.green, .mint, .green], center: .center),
-                    style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
-                )
-                .rotationEffect(.degrees(-90))
-            if progress > 1 {
-                Circle()
-                    .trim(from: 0, to: min(progress - 1, 1))
-                    .stroke(.orange, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
+            arc(0, baseEnd, .quaternary, cap: .butt)
+            if earned > 0 {
+                arc(baseEnd, 1, Color.earned.opacity(0.25), cap: .butt)
+            }
+            if eatenFraction > baseEnd {
+                arc(baseEnd, min(eatenFraction, 1), Color.earned)
+            }
+            arc(0, min(eatenFraction, baseEnd), AngularGradient(colors: [.green, .mint, .green], center: .center))
+            if eatenFraction > 1 {
+                arc(0, min(eatenFraction - 1, 1), Color.red)
             }
         }
+    }
+
+    private func arc(_ from: Double, _ to: Double, _ style: some ShapeStyle, cap: CGLineCap = .round) -> some View {
+        Circle()
+            .trim(from: from, to: max(from, to))
+            .stroke(style, style: StrokeStyle(lineWidth: lineWidth, lineCap: cap))
+            .rotationEffect(.degrees(-90))
+            .opacity(to > from ? 1 : 0)
     }
 }
 

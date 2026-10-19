@@ -65,9 +65,14 @@ public struct DailyTarget: Equatable, Sendable {
     public var plannedWeeklyLossKg: Double
     /// Set when the requested rate was reduced or the calorie floor kicked in.
     public var adjustmentNote: String?
-    /// Activity calories counted towards maintenance, when they come from Apple Health.
-    /// Nil when maintenance uses the activity level multiplier instead.
-    public var activityKcal: Double? = nil
+    /// Extra calories earned by measured activity beyond what the activity level assumes.
+    /// Zero without measured activity. Never reduces the base target.
+    public var earnedKcal: Double = 0
+
+    /// The daily goal from the profile; the same every day.
+    public var baseKcal: Double { kcal }
+    /// What can be eaten today: the goal plus anything earned.
+    public var totalKcal: Double { kcal + earnedKcal }
 }
 
 public enum EnergyMath {
@@ -84,10 +89,19 @@ public enum EnergyMath {
         bmr(p) * p.activity.multiplier
     }
 
-    /// Resting energy plus the thermic effect of food (about 10%). Measured active
-    /// energy already covers all movement above resting, so it is added on top of this
-    /// rather than the 1.2 sedentary multiplier, which would count some movement twice.
+    /// Resting energy plus the thermic effect of food (about 10%). The rest of the
+    /// activity multiplier is movement, which is what measured active energy covers.
     public static let thermicEffectMultiplier = 1.1
+
+    /// Active energy the activity level already assumes, so it isn't counted twice.
+    public static func assumedActiveKcal(_ p: EnergyProfile) -> Double {
+        bmr(p) * max(0, p.activity.multiplier - thermicEffectMultiplier)
+    }
+
+    /// Calories earned by a day's measured activity beyond the usual level.
+    public static func earnedKcal(_ p: EnergyProfile, activeEnergyKcal: Double, activeCredit: Double) -> Double {
+        max(0, activeEnergyKcal * activeCredit - assumedActiveKcal(p))
+    }
 
     /// Common guidance: no faster than about 1% of body weight per week.
     public static func maxWeeklyLoss(weightKg: Double) -> Double {
@@ -101,7 +115,7 @@ public enum EnergyMath {
 
     /// - Parameters:
     ///   - activeEnergyKcal: Measured active energy for the day (e.g. from Apple Health).
-    ///     Nil uses the activity level multiplier.
+    ///     Only adds `earnedKcal`; the base target always comes from the activity level.
     ///   - activeCredit: Share of measured active energy to count, since watches often overestimate it.
     public static func dailyTarget(
         _ p: EnergyProfile,
@@ -109,8 +123,7 @@ public enum EnergyMath {
         activeCredit: Double = 0.75
     ) -> DailyTarget {
         let bmr = bmr(p)
-        let activityKcal = activeEnergyKcal.map { max(0, $0) * activeCredit }
-        let maintenance = activityKcal.map { bmr * thermicEffectMultiplier + $0 } ?? maintenance(p)
+        let maintenance = maintenance(p)
         var note: String?
 
         var rate = max(0, p.weeklyLossKg)
@@ -136,7 +149,7 @@ public enum EnergyMath {
             macros: macroTargets(kcal: kcal, weightKg: p.weightKg),
             plannedWeeklyLossKg: rate,
             adjustmentNote: note,
-            activityKcal: activityKcal
+            earnedKcal: activeEnergyKcal.map { earnedKcal(p, activeEnergyKcal: $0, activeCredit: activeCredit) } ?? 0
         )
     }
 

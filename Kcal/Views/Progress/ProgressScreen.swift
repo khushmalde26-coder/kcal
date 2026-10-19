@@ -58,7 +58,7 @@ struct ProgressScreen: View {
                     row("Trend weight", trend.last.map { "\($0.formatted(.number.precision(.fractionLength(1)))) kg" })
                     row("Weekly change", weeklyRate.map { "\($0 > 0 ? "+" : "")\($0.formatted(.number.precision(.fractionLength(2)))) kg" })
                     row("Average intake", averageIntake.map { "\(Int($0.rounded())) kcal" })
-                    row("Daily goal", "\(Int(settings.target(activeEnergyKcal: health.activeEnergy(on: .now)).kcal)) kcal")
+                    row("Daily goal", "\(Int(settings.target.kcal)) kcal")
                 }
 
                 if !weights.isEmpty {

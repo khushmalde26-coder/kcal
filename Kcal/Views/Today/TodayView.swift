@@ -17,7 +17,11 @@ struct TodayView: View {
 
     var body: some View {
         NavigationStack {
-            DayLog(day: day, target: settings.target(activeEnergyKcal: health.activeEnergy(on: day)))
+            DayLog(
+                day: day,
+                target: settings.target(activeEnergyKcal: health.activeEnergy(on: day)),
+                showsActivity: settings.healthEnabled
+            )
                 .navigationTitle(title)
                 .refreshable { await health.refreshActiveEnergy(on: day) }
                 // Reload on day change, return to the app, or Health switched on, then follow
@@ -75,13 +79,15 @@ private struct ActivityKey: Equatable {
 private struct DayLog: View {
     let day: Date
     let target: DailyTarget
+    let showsActivity: Bool
     @Query private var entries: [LogEntry]
     @Environment(\.modelContext) private var context
     @Environment(HealthService.self) private var health
 
-    init(day: Date, target: DailyTarget) {
+    init(day: Date, target: DailyTarget, showsActivity: Bool) {
         self.day = day
         self.target = target
+        self.showsActivity = showsActivity
         _entries = Query(filter: #Predicate<LogEntry> { $0.day == day }, sort: \LogEntry.timestamp)
     }
 
@@ -92,7 +98,7 @@ private struct DayLog: View {
     var body: some View {
         List {
             Section {
-                SummaryCard(eaten: totals, target: target)
+                SummaryCard(eaten: totals, target: target, showsActivity: showsActivity)
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
             }

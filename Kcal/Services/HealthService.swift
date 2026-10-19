@@ -57,6 +57,13 @@ final class HealthService {
     func refreshActiveEnergy(on day: Date) async {
         guard isOn else { return }
         let start = Calendar.current.startOfDay(for: day)
+        #if DEBUG
+        // For simulator screenshots: KCAL_MOCK_ACTIVE_KCAL=1000 in the launch environment.
+        if let mock = ProcessInfo.processInfo.environment["KCAL_MOCK_ACTIVE_KCAL"].flatMap(Double.init) {
+            activeEnergyByDay[start] = mock
+            return
+        }
+        #endif
         guard let end = Calendar.current.date(byAdding: .day, value: 1, to: start) else { return }
         let descriptor = HKStatisticsQueryDescriptor(
             predicate: .quantitySample(type: Self.activeEnergy, predicate: HKQuery.predicateForSamples(withStart: start, end: end)),

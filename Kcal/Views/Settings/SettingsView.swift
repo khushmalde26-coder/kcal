@@ -5,13 +5,8 @@ import KcalCore
 /// Profile and goal form, shared by onboarding and settings.
 struct GoalForm: View {
     @Binding var profile: EnergyProfile
-    /// With Apple Health on, activity is measured rather than picked, and the plan
-    /// shows the budget before any activity is added.
-    var healthEnabled = false
 
-    private var target: DailyTarget {
-        EnergyMath.dailyTarget(profile, activeEnergyKcal: healthEnabled ? 0 : nil)
-    }
+    private var target: DailyTarget { EnergyMath.dailyTarget(profile) }
 
     var body: some View {
         Section("About you") {
@@ -22,12 +17,8 @@ struct GoalForm: View {
             Stepper("Age \(profile.age)", value: $profile.age, in: 16...100)
             measurement("Height", $profile.heightCm, unit: "cm")
             measurement("Weight", $profile.weightKg, unit: "kg")
-            if healthEnabled {
-                LabeledContent("Activity", value: "From Apple Health")
-            } else {
-                Picker("Activity", selection: $profile.activity) {
-                    ForEach(ActivityLevel.allCases, id: \.self) { Text($0.label).tag($0) }
-                }
+            Picker("Activity", selection: $profile.activity) {
+                ForEach(ActivityLevel.allCases, id: \.self) { Text($0.label).tag($0) }
             }
         }
 
@@ -48,16 +39,15 @@ struct GoalForm: View {
         }
 
         Section {
-            LabeledContent("Daily calories", value: "\(Int(target.kcal)) kcal\(healthEnabled ? " + activity" : "")")
-            LabeledContent(healthEnabled ? "Resting + digestion" : "Maintenance", value: "\(Int(target.maintenance.rounded())) kcal")
+            LabeledContent("Daily calories", value: "\(Int(target.kcal)) kcal")
+            LabeledContent("Maintenance", value: "\(Int(target.maintenance.rounded())) kcal")
             LabeledContent("Protein", value: "\(Int(target.macros.protein)) g")
             LabeledContent("Carbs", value: "\(Int(target.macros.carbs)) g")
             LabeledContent("Fat", value: "\(Int(target.macros.fat)) g")
         } header: {
             Text("Your plan")
         } footer: {
-            Text("Estimated with the Mifflin-St Jeor equation. Real needs vary by a few hundred kcal; after 2 to 3 weeks your weight trend is the better guide."
-                 + (healthEnabled ? " Activity calories from Apple Health are added through the day." : ""))
+            Text("Estimated with the Mifflin-St Jeor equation. Real needs vary by a few hundred kcal; after 2 to 3 weeks your weight trend is the better guide.")
         }
     }
 
@@ -98,10 +88,10 @@ struct SettingsView: View {
                     } header: {
                         Text("Apple Health")
                     } footer: {
-                        Text("Adds your active calories to the day's budget, saves the food you log and syncs weigh-ins. Watches often overestimate active calories, so Kcal counts 75% by default.")
+                        Text("Your goal stays the same every day. Extra activity beyond your usual level adds amber calories you can eat, counted at 75% by default. Kcal also saves the food you log and syncs weigh-ins.")
                     }
                 }
-                GoalForm(profile: $settings.profile, healthEnabled: settings.healthEnabled)
+                GoalForm(profile: $settings.profile)
                 Section("Data sources") {
                     Link("Open Food Facts (ODbL)", destination: URL(string: "https://world.openfoodfacts.org")!)
                     Link("USDA FoodData Central", destination: URL(string: "https://fdc.nal.usda.gov")!)
@@ -163,10 +153,10 @@ struct OnboardingView: View {
                             }
                         }
                     } footer: {
-                        Text("Optional. Your active calories raise the day's budget, and food and weigh-ins are saved to Health.")
+                        Text("Optional. Days you move more than usual earn extra calories, and food and weigh-ins are saved to Health.")
                     }
                 }
-                GoalForm(profile: $profile, healthEnabled: settings.healthEnabled)
+                GoalForm(profile: $profile)
             }
             .contentMargins(.bottom, 96, for: .scrollContent)
             .safeAreaInset(edge: .bottom) {
