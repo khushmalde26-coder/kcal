@@ -29,7 +29,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.khushmalde.kcal
-        CODE_SIGN_ENTITLEMENTS: Kcal/Kcal.entitlements
+        CODE_SIGN_ENTITLEMENTS: $(KCAL_ENTITLEMENTS)
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     info:
       path: Kcal/Info.plist
@@ -50,6 +50,8 @@ targets:
         NSHealthShareUsageDescription: Kcal reads your active calories and weight to adjust your daily budget.
         NSHealthUpdateUsageDescription: Kcal saves the food you log and your weigh-ins to Apple Health.
         ITSAppUsesNonExemptEncryption: false
+        # Lets CloudKit push changes from your other devices (iCloud builds only).
+        UIBackgroundModes: [remote-notification]
         KcalUSDAAPIKey: $(USDA_API_KEY)
         KcalMealPhotoEndpoint: $(MEAL_PHOTO_ENDPOINT)
 schemes:

@@ -11,4 +11,9 @@ MEAL_PHOTO_ENDPOINT =
 // DEVELOPMENT_TEAM = ABCDE12345
 // CODE_SIGN_STYLE = Automatic
 
+// iCloud sync needs a paid Apple Developer Program team. With one, add this to
+// Secrets.xcconfig to sign with the iCloud entitlements:
+// KCAL_ENTITLEMENTS = Kcal/Kcal-iCloud.entitlements
+KCAL_ENTITLEMENTS = Kcal/Kcal.entitlements
+
 #include? "Secrets.xcconfig"

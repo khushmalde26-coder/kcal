@@ -7,6 +7,21 @@ struct KcalApp: App {
     @State private var settings: AppSettings
     @State private var health: HealthService
 
+    /// Syncs through the user's private iCloud database when the app is signed with the
+    /// iCloud entitlement (`.automatic` uses the first container listed); otherwise the
+    /// store is local only. Every model property has a default and every relationship is
+    /// optional, as CloudKit requires.
+    static let container: ModelContainer = {
+        let schema = Schema([Food.self, LogEntry.self, WeightEntry.self, StapleChoice.self, Recipe.self, RecipeIngredient.self])
+        let config = ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
+        do {
+            return try ModelContainer(for: schema, configurations: config)
+        } catch {
+            // Never lose the app over sync: fall back to the local store.
+            return try! ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, cloudKitDatabase: .none))
+        }
+    }()
+
     init() {
         let settings = AppSettings()
         _settings = State(initialValue: settings)
@@ -22,7 +37,7 @@ struct KcalApp: App {
                 .tint(Theme.ringGoal)
                 .foregroundStyle(Theme.text)
         }
-        .modelContainer(for: [Food.self, LogEntry.self, WeightEntry.self, StapleChoice.self, Recipe.self, RecipeIngredient.self])
+        .modelContainer(Self.container)
     }
 }
 
@@ -66,6 +81,7 @@ struct RootView: View {
         .task(id: scenePhase == .active && settings.healthEnabled) {
             guard scenePhase == .active else { return }
             await health.importWeights(into: context)
+            context.mergeSyncDuplicates()
         }
     }
 }

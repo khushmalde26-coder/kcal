@@ -105,6 +105,23 @@ struct IngredientDraft: Identifiable {
 }
 
 extension ModelContext {
+    /// With iCloud sync, two devices can create the same record before they see each
+    /// other's: the same Health weigh-in imported twice, or a staple set on both.
+    /// Keeps the first of each and deletes the rest.
+    func mergeSyncDuplicates() {
+        let weights = (try? fetch(FetchDescriptor<WeightEntry>(sortBy: [SortDescriptor(\.date)]))) ?? []
+        var seenWeights = Set<String>()
+        for weight in weights where weight.importedFromHealth {
+            guard let id = weight.healthSyncID else { continue }
+            if !seenWeights.insert(id).inserted { delete(weight) }
+        }
+        let staples = (try? fetch(FetchDescriptor<StapleChoice>())) ?? []
+        var seenSlots = Set<String>()
+        for choice in staples where !seenSlots.insert(choice.slotRaw).inserted {
+            delete(choice)
+        }
+    }
+
     func setStaple(_ slot: StapleSlot, food: Food?) {
         let raw = slot.rawValue
         let existing = (try? fetch(FetchDescriptor<StapleChoice>(predicate: #Predicate { $0.slotRaw == raw }))) ?? []

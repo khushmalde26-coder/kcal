@@ -84,3 +84,22 @@ All colours live once in `Kcal/Assets.xcassets/Theme` (light and dark variants) 
 | Macro bars: protein / carbs / fat | Cocoa / #A9785C / #8A7564 on Oat | 9.9 / 3.3 / 3.8 | Sand / Blush / #B89B80 on #33261E | 9.8 / 7.2 / 5.6 |
 
 Blush #D4AE96 is 1.9:1 on Milk, so on light backgrounds it's decorative only (the logo dot) and never carries text or data. The Sand ring track (1.3:1) is decorative; the ring's state is also given as text ("kcal left" / "kcal over") and by shape: the earned zone starts after a gap, and going over adds a thinner ring outside.
+
+## iCloud sync
+
+Food logs, weigh-ins, your foods, homemade items and staples sync between your iPhone and
+iPad through your private iCloud database (SwiftData + CloudKit). Your profile, goal and
+activity setting sync through the iCloud key-value store. Apple Health stays per device.
+
+It needs a paid Apple Developer Program team; free personal teams can't sign iCloud.
+To switch it on:
+
+1. Join the Apple Developer Program and sign in to Xcode with that account.
+2. In `Config/Secrets.xcconfig` set `DEVELOPMENT_TEAM` to the paid team and add
+   `KCAL_ENTITLEMENTS = Kcal/Kcal-iCloud.entitlements`.
+3. `xcodegen`, build with `-allowProvisioningUpdates`; Xcode registers the
+   `iCloud.com.khushmalde.kcal` container.
+4. Before release, deploy the CloudKit schema to Production in the CloudKit Console
+   and change `aps-environment` to `production`.
+
+Without the entitlement the app keeps a local store, exactly as before.

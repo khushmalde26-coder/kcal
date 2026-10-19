@@ -198,6 +198,8 @@ final class HealthService {
             guard !duplicate else { continue }
             let entry = WeightEntry(date: sample.startDate, kg: kg)
             entry.importedFromHealth = true
+            // The sample's id, so the same weigh-in imported on two devices can be merged.
+            entry.healthSyncID = sample.uuid.uuidString
             context.insert(entry)
             known.append(entry)
             newest = entry
