@@ -100,6 +100,7 @@ private struct DayLog: View {
     @Environment(\.modelContext) private var context
     @Environment(HealthService.self) private var health
     @State private var selected: LogEntry?
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     init(day: Date, target: DailyTarget, showsActivity: Bool) {
         self.day = day
@@ -113,13 +114,41 @@ private struct DayLog: View {
     }
 
     var body: some View {
-        List {
-            Section {
-                SummaryCard(eaten: totals, target: target, showsActivity: showsActivity)
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
+        Group {
+            if sizeClass == .regular {
+                // iPad: summary in its own column beside the meals.
+                HStack(alignment: .top, spacing: 0) {
+                    ScrollView {
+                        summary
+                            .padding(.vertical, 16)
+                    }
+                    .frame(width: 420)
+                    meals(withSummary: false)
+                }
+                .background(Theme.background)
+            } else {
+                meals(withSummary: true)
             }
-            .listRowBackground(Theme.surface)
+        }
+        .animation(.smooth, value: entries.count)
+        .sheet(item: $selected) { entry in
+            EntryDetailView(entry: entry, target: target)
+        }
+    }
+
+    private var summary: some View {
+        SummaryCard(eaten: totals, target: target, showsActivity: showsActivity)
+    }
+
+    private func meals(withSummary: Bool) -> some View {
+        List {
+            if withSummary {
+                Section {
+                    summary
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
+            }
 
             ForEach(Meal.allCases) { meal in
                 let items = entries.filter { $0.meal == meal }
@@ -154,10 +183,6 @@ private struct DayLog: View {
         .themedList()
         .listStyle(.insetGrouped)
         .contentMargins(.bottom, 96, for: .scrollContent)
-        .animation(.smooth, value: entries.count)
-        .sheet(item: $selected) { entry in
-            EntryDetailView(entry: entry, target: target)
-        }
     }
 }
 

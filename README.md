@@ -65,9 +65,7 @@ allows about 30 searches an hour.
    redistribute their data from a backend, share-alike applies to that database.
 4. **Not yet built**: see docs/quality-check-2026-10-19.md for the prioritised list
    (lbs/stone units, reminders, widgets, copy meals, privacy policy, App Store labels).
-5. Xcode warns that a portrait-only app should support all orientations or require full
-   screen. It only matters for iPad multitasking; this app is iPhone only.
-6. Label OCR assumes the photo is roughly straight. Tilted photos split rows badly.
+5. Label OCR assumes the photo is roughly straight. Tilted photos split rows badly.
 
 ## Colour and contrast
 

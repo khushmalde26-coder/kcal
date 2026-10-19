@@ -87,6 +87,8 @@ struct MainTabs: View {
                 FoodSearchView(day: .now, isSheet: false)
             }
         }
+        // iPad: a sidebar that can collapse to a tab bar; iPhone: the usual tab bar.
+        .tabViewStyle(.sidebarAdaptable)
         .tabBarMinimizeBehavior(.onScrollDown)
     }
 }

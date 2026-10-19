@@ -33,9 +33,11 @@ enum Theme {
 extension View {
     /// Milk background behind a List or Form. Rows get Oat per section
     /// (`.listRowBackground(Theme.surface)`), since it doesn't carry down from the List.
+    /// On iPad, also keeps rows to a readable width instead of stretching edge to edge.
     func themedList() -> some View {
         scrollContentBackground(.hidden)
             .background(Theme.background)
+            .modifier(ReadableWidth())
     }
 }
 
@@ -46,5 +48,25 @@ extension Theme {
         let bar = UINavigationBar.appearance()
         bar.largeTitleTextAttributes = [.foregroundColor: text]
         bar.titleTextAttributes = [.foregroundColor: text]
+    }
+}
+
+/// Centres scrolling content at a comfortable reading width on wide screens (iPad),
+/// leaving iPhone layouts untouched.
+struct ReadableWidth: ViewModifier {
+    var maxWidth: CGFloat = 720
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @State private var width: CGFloat = 0
+
+    func body(content: Content) -> some View {
+        content
+            .contentMargins(.horizontal, margin, for: .scrollContent)
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+    }
+
+    /// Nil keeps the list's own insets; a fixed 0 would remove them.
+    private var margin: CGFloat? {
+        guard sizeClass == .regular, width > maxWidth else { return nil }
+        return (width - maxWidth) / 2
     }
 }
